@@ -96,6 +96,43 @@ describe("events use store time", () => {
   });
 });
 describe("server input validation", () => {
+  it("accepts local client images in content and business settings without IMAGE_HOST", () => {
+    vi.stubEnv("IMAGE_HOST", "");
+    const imageUrl = "/client-assets/logo/Logo.jpg";
+    expect(allowedImageUrl(imageUrl)).toBe(true);
+    expect(allowedImageUrl("/derived/bear-arms-logo.webp")).toBe(true);
+    expect(
+      contentSchema.safeParse(record({ imageUrl, imageAlt: "Store logo" }))
+        .success,
+    ).toBe(true);
+    expect(
+      businessSchema.safeParse({
+        ...defaultBusiness,
+        storeImageUrl: imageUrl,
+        storeImageAlt: "Store logo",
+      }).success,
+    ).toBe(true);
+    expect(allowedImageUrl("https://images.example.com/store.webp")).toBe(
+      false,
+    );
+  });
+  it("rejects unsafe local paths and non-image assets", () => {
+    for (const value of [
+      "/client-assets/../secret.png",
+      "/client-assets/logo/../../secret.jpg",
+      "/client-assets/%2e%2e/secret.png",
+      "/client-assets/logo%2fLogo.jpg",
+      "//client-assets/logo/Logo.jpg",
+      "/client-assets//Logo.jpg",
+      "/client-assets/logo/Logo.jpg?file=other",
+      "/client-assets/logo/Logo.jpg#fragment",
+      "/client-assets/logo/BearArms_Outline.pdf",
+      "/client-assets/logo/script.svg",
+      "/other-assets/photo.jpg",
+      "/client-assets/logo\\Logo.jpg",
+    ])
+      expect(allowedImageUrl(value)).toBe(false);
+  });
   it("allows content without an image", () => {
     expect(contentSchema.safeParse(record()).success).toBe(true);
   });
@@ -117,6 +154,7 @@ describe("server input validation", () => {
   });
   it("limits image sources to a configured HTTPS host", () => {
     vi.stubEnv("IMAGE_HOST", "images.example.com");
+    expect(allowedImageUrl("/client-assets/logo/Logo.jpg")).toBe(true);
     expect(allowedImageUrl("https://images.example.com/store.webp")).toBe(true);
     for (const value of [
       "javascript:alert(1)",

@@ -41,9 +41,9 @@ The application runs on a Node-compatible Next.js host. No hosting account, data
 
 ## Dynamic images
 
-Database rows store image URLs and alt descriptions, not binary files. Admins may use images from one approved HTTPS host. Safe local `/derived/` raster paths are also supported for developer-managed assets. Other hosts, credentials in URLs, data URLs, and arbitrary local paths are rejected server-side. Next.js optimizes these images.
+Database rows store image URLs and alt descriptions, not binary files. Admins may use images from one approved HTTPS host. Local raster image paths under `/client-assets/` and `/derived/` are also supported, including when `IMAGE_HOST` is unset. For example, use `/client-assets/logo/Logo.jpg` (omit the `public` prefix). Supported formats are JPEG, PNG, WebP, and AVIF; PDF files, traversal paths, and local query strings are rejected. Other hosts, credentials in URLs, data URLs, and arbitrary local paths are rejected server-side. Next.js optimizes these images.
 
-Direct file upload is **not implemented**: the storage provider has not been selected. Currently an administrator copies an already-hosted image link into the form. This remains a deployment/configuration decision, not a mock upload button. To add direct upload later, have the selected provider return a URL under `IMAGE_HOST`, then store it in the existing `imageUrl`/`storeImageUrl` fields. Authorize upload operations with `requireAdmin`, validate file size/type server-side, and keep provider credentials server-only. No public content functionality depends on an upload provider.
+Direct file upload is **not implemented**: the storage provider has not been selected. Currently an administrator enters an existing local image path or copies an approved hosted image link into the form. This remains a deployment/configuration decision, not a mock upload button. To add direct upload later, have the selected provider return a URL under `IMAGE_HOST`, then store it in the existing `imageUrl`/`storeImageUrl` fields. Authorize upload operations with `requireAdmin`, validate file size/type server-side, and keep provider credentials server-only. No public content functionality depends on an upload provider.
 
 ## Verified business information and assets
 
@@ -88,7 +88,7 @@ No source-code insertion is required for business content. Use the authenticated
 
 - `npm run lint`: passed, no warnings.
 - `npm run typecheck`: passed.
-- `npm test`: 35 tests passed across seven files. Tests cover publication/history rules, Eastern-time event expiration, validation, optional images, server authorization, protected mutations, safe authentication errors, map/navigation behavior, and form values/record identity across failed saves.
+- `npm test`: 37 tests passed across seven files. Tests cover publication/history rules, Eastern-time event expiration, validation, optional images, server authorization, protected mutations, safe authentication errors, map/navigation behavior, and form values/record identity across failed saves.
 - `npm run build`: passed. Turbopack required permission to create its local compiler process outside the sandbox.
 - The local homepage returned HTTP 200. Exhaustive visual/browser QA was deliberately left to the human developer.
 - No live database migration, account creation, live sign-in, storage upload, or deployment was performed. External services are mocked in tests; tests do not contact production APIs.

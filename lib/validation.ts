@@ -3,7 +3,16 @@ import { contentKinds } from "./content";
 
 export function allowedImageUrl(value: string) {
   if (!value) return true;
-  if (/^\/derived\/[a-zA-Z0-9/_-]+\.(webp|png|jpg|jpeg|avif)$/.test(value))
+  // Public image paths do not require an external image-library host.
+  // Restrict every segment to prevent traversal, encoded paths, and query strings.
+  if (
+    /^\/(derived|client-assets)\//.test(value) &&
+    /\.(webp|png|jpg|jpeg|avif)$/i.test(value) &&
+    value
+      .slice(1)
+      .split("/")
+      .every((segment) => /^[a-z0-9][a-z0-9._ -]*$/i.test(segment))
+  )
     return true;
   try {
     const url = new URL(value);
@@ -36,7 +45,7 @@ export const contentSchema = z
       .max(2000)
       .refine(
         allowedImageUrl,
-        "Use an image from the configured image library.",
+        "Use a local image under /client-assets/ or /derived/, or an image from the configured image library.",
       ),
     imageAlt: z.string().trim().max(250),
     startsOn: date,
@@ -97,7 +106,7 @@ export const businessSchema = z
       .max(2000)
       .refine(
         allowedImageUrl,
-        "Use an image from the configured image library.",
+        "Use a local image under /client-assets/ or /derived/, or an image from the configured image library.",
       ),
     storeImageAlt: z.string().trim().max(250),
   })

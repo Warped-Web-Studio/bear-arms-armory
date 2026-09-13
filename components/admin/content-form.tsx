@@ -141,8 +141,8 @@ export function ContentForm({
           "text",
           false,
           imageLibraryConfigured
-            ? "Paste a link from your approved image library. Landscape images of at least 1600 × 1200 work well; keep the subject near the center."
-            : "The image library is not connected yet. You can save and publish without an image.",
+            ? "Use a local image path under /client-assets/ or /derived/, or paste a link from your approved image library. Keep the subject near the center."
+            : "Use an existing local image path, such as /client-assets/logo/Logo.jpg. Images are optional; an external image library can be connected later.",
         )}
         {field(
           "imageAlt",

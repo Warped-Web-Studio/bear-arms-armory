@@ -26,6 +26,12 @@ export function BusinessForm({ business }: { business: Business }) {
         {fields.map(({ name, label, long }) => (
           <div className={`field ${long ? "wide" : ""}`} key={name}>
             <label htmlFor={name}>{label}</label>
+            {name === "storeImageUrl" && (
+              <small>
+                Use an existing image under /client-assets/ or /derived/, or a
+                link from your approved image library.
+              </small>
+            )}
             {long ? (
               <textarea
                 name={name}
