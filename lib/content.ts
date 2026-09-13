@@ -8,8 +8,8 @@ export const contentKinds = [
 ] as const;
 export type ContentKind = (typeof contentKinds)[number];
 export const kindLabels: Record<ContentKind, string> = {
-  weekly: "Featured This Week",
-  monthly: "Featured This Month",
+  weekly: "Gun of the Week",
+  monthly: "Gun of the Month",
   event: "Event",
   announcement: "Announcement",
 };
