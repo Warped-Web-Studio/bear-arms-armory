@@ -1,36 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bear Arms Armory
 
-## Getting Started
+A Next.js one-page business-information website and a small, protected administration dashboard for neutral store highlights, events, announcements, and business details. Built for Warped Web Studio.
 
-First, run the development server:
+## Development
 
-```bash
+```sh
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The public business page works without service credentials. Admin access and persistent content require Neon PostgreSQL and Better Auth configuration. See [client review and setup](docs/CLIENT-REVIEW.md) for environment variables, migrations, account provisioning, image handling, content behavior, verified sources, and manual QA.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Checks
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```sh
+npm run lint
+npm run typecheck
+npm test
+npm run build
+```
 
-## Learn More
+## Database and accounts
 
-To learn more about Next.js, take a look at the following resources:
+Copy `.env.example` to `.env.local` and configure it privately. After reviewing the generated migration:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```sh
+npm run db:migrate
+npm run admin:create
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`npm run admin:reset-password` provides developer-assisted recovery and revokes existing sessions. Remove temporary bootstrap passwords from the environment after account maintenance. Do not run migrations or account maintenance against production until the human developer has reviewed the target and configuration.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+No public registration, ecommerce, product inventory, or weapon-specific promotional functionality is included.

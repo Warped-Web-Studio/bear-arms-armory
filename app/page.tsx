@@ -1,69 +1,309 @@
 import Image from "next/image";
-
-export default function Home() {
+import { getBusiness, getPublicContent } from "@/lib/data";
+import { defaultBusiness, siteOrigin } from "@/lib/business";
+import { displayDate, displayTime } from "@/lib/content";
+import { Navigation } from "@/components/navigation";
+import { MapToggle } from "@/components/map-toggle";
+import { Highlight } from "@/components/highlight";
+import { ContentImage } from "@/components/content-image";
+export const dynamic = "force-dynamic";
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ gallery?: string }>;
+}) {
+  const query = await searchParams;
+  const page = /^[1-9]\d{0,3}$/.test(query.gallery || "")
+    ? Number(query.gallery)
+    : 1;
+  const [business, data] = await Promise.all([
+    getBusiness().catch(() => defaultBusiness),
+    getPublicContent(page),
+  ]);
+  const address = `${business.address}, ${business.city}, ${business.region} ${business.postalCode}`;
+  const phone = business.phone.replace(/[^+\d]/g, "");
+  const links = [
+    ...(data.weekly ? [{ href: "#weekly", label: "This week" }] : []),
+    ...(data.monthly ? [{ href: "#monthly", label: "This month" }] : []),
+    ...(data.events.length ? [{ href: "#events", label: "Events" }] : []),
+    { href: "#about", label: "Our store" },
+    { href: "#visit", label: "Location & hours" },
+  ];
+  const structured = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: business.name,
+    url: siteOrigin,
+    telephone: business.phone,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: business.address,
+      addressLocality: business.city,
+      addressRegion: business.region,
+      postalCode: business.postalCode,
+      addressCountry: "US",
+    },
+    ...(business.email ? { email: business.email } : {}),
+  };
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(structured).replace(/</g, "\\u003c"),
+        }}
+      />
+      <a className="skip-link" href="#main">
+        Skip to content
+      </a>
+      <header className="site-header">
+        <a className="brand" href="#" aria-label="Bear Arms Armory home">
+          <Image
+            src="/derived/bear-arms-logo.webp"
+            alt=""
+            width={64}
+            height={65}
+            priority
+          />
+          <span>
+            BEAR ARMS<span>ARMORY</span>
+          </span>
+        </a>
+        <Navigation links={links} />
+      </header>
+      <main id="main">
+        <section className="hero">
+          <div className="hero-copy">
+            <p className="eyebrow">{business.city}, Pennsylvania</p>
+            <h1>
+              A local store.
+              <br />
+              <em>A familiar place.</em>
+            </h1>
+            <p>
+              Welcome to Bear Arms Armory. Find store updates, community news,
+              and the details for your next visit.
+            </p>
+            <a className="button button-brass" href="#visit">
+              Location & hours <span aria-hidden="true">↗</span>
+            </a>
+          </div>
+          <div className="hero-mark">
             <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+              src="/derived/bear-arms-logo.webp"
+              alt="Bear Arms Armory bear emblem"
+              width={540}
+              height={550}
+              priority
+              sizes="(max-width: 720px) 70vw, 40vw"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+          <div className="hero-bottom">
+            <span>BEAR ARMS ARMORY</span>
+            <span>
+              {business.address} · {business.city}, {business.region}
+            </span>
+            <a href={`tel:${phone}`}>{business.phone}</a>
+          </div>
+        </section>
+        {data.announcements.length > 0 && (
+          <section
+            className="announcements wrap"
+            aria-label="Store announcements"
           >
-            Documentation
-          </a>
-        </div>
+            {data.announcements.map((a) => (
+              <article key={a.id}>
+                <p className="eyebrow">Store note</p>
+                <div>
+                  <h2>{a.title}</h2>
+                  <p className="prose">{a.description}</p>
+                </div>
+                {a.imageUrl && (
+                  <ContentImage src={a.imageUrl} alt={a.imageAlt} />
+                )}
+              </article>
+            ))}
+          </section>
+        )}
+        {data.weekly && <Highlight record={data.weekly} />}
+        {data.monthly && <Highlight record={data.monthly} />}
+        {data.events.length > 0 && (
+          <section id="events" className="section events wrap">
+            <div className="section-heading">
+              <p className="eyebrow">On the calendar</p>
+              <h2>Coming together.</h2>
+              <p>
+                Upcoming events at the store and in our community. All times
+                Eastern.
+              </p>
+            </div>
+            <div className="event-list">
+              {data.events.map((event) => (
+                <article key={event.id} className="event">
+                  <div className="date-tile">
+                    <span>
+                      {new Date(
+                        event.startsOn + "T12:00:00Z",
+                      ).toLocaleDateString("en-US", {
+                        month: "short",
+                        timeZone: "UTC",
+                      })}
+                    </span>
+                    <strong>{event.startsOn.slice(-2)}</strong>
+                  </div>
+                  <div>
+                    <p className="eyebrow">
+                      {displayDate(event.startsOn)}
+                      {event.endsOn !== event.startsOn
+                        ? ` – ${displayDate(event.endsOn)}`
+                        : ""}
+                    </p>
+                    <h3>{event.title}</h3>
+                    <p>
+                      {displayTime(event.startTime)} –{" "}
+                      {displayTime(event.endTime)} · {event.location || address}
+                    </p>
+                    <p className="prose">{event.description}</p>
+                  </div>
+                  {event.imageUrl && (
+                    <ContentImage src={event.imageUrl} alt={event.imageAlt} />
+                  )}
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+        {(data.archive.length > 0 || page > 1) && (
+          <section id="gallery" className="section gallery">
+            <div className="wrap">
+              <div className="section-heading">
+                <p className="eyebrow">From around the store</p>
+                <h2>Store Highlights Gallery</h2>
+                <p>
+                  A look back at the people, moments, and updates we’ve shared.
+                </p>
+              </div>
+              <div className="gallery-grid">
+                {data.archive.map((item) => (
+                  <article
+                    key={item.id}
+                    className={`gallery-card ${item.imageUrl ? "" : "no-image"}`}
+                  >
+                    {item.imageUrl && (
+                      <ContentImage src={item.imageUrl} alt={item.imageAlt} />
+                    )}
+                    <div>
+                      <p className="eyebrow">
+                        Previous highlight · {displayDate(item.startsOn)}
+                      </p>
+                      <h3>{item.title}</h3>
+                      <p className="prose">{item.description}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+              {!data.archive.length && <p>No highlights on this page.</p>}
+              <nav className="pagination" aria-label="Highlights gallery pages">
+                {page > 1 && (
+                  <a className="button" href={`?gallery=${page - 1}#gallery`}>
+                    ← Newer highlights
+                  </a>
+                )}
+                {data.hasMore && (
+                  <a className="button" href={`?gallery=${page + 1}#gallery`}>
+                    Older highlights →
+                  </a>
+                )}
+              </nav>
+            </div>
+          </section>
+        )}
+        <section id="about" className="about section wrap">
+          <div>
+            <p className="eyebrow">Rooted in Corry</p>
+            <h2>
+              Our store.
+              <br />
+              Our community.
+            </h2>
+          </div>
+          <div>
+            <span className="about-rule" aria-hidden="true" />
+            <p className="prose large-copy">{business.about}</p>
+            <p>
+              Find us on East Columbus Avenue. For store hours or general
+              questions, give us a call.
+            </p>
+            <a className="text-link" href={`tel:${phone}`}>
+              {business.phone} ↗
+            </a>
+          </div>
+        </section>
+        {business.storeImageUrl && (
+          <section className="store-photo wrap" aria-label="Around the store">
+            <ContentImage
+              src={business.storeImageUrl}
+              alt={business.storeImageAlt}
+            />
+          </section>
+        )}
+        <section id="visit" className="visit section">
+          <div className="wrap">
+            <div className="section-heading">
+              <p className="eyebrow">Location & contact</p>
+              <h2>Find us in Corry.</h2>
+            </div>
+            <div className="contact-grid">
+              <div>
+                <h3>Visit the store</h3>
+                <address>
+                  {business.name}
+                  <br />
+                  {business.address}
+                  <br />
+                  {business.city}, {business.region} {business.postalCode}
+                </address>
+                <a
+                  className="text-link"
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Get directions ↗
+                </a>
+              </div>
+              <div>
+                <h3>Store hours</h3>
+                <p className="prose">{business.hours}</p>
+              </div>
+              <div>
+                <h3>Get in touch</h3>
+                <a className="contact-phone" href={`tel:${phone}`}>
+                  {business.phone}
+                </a>
+                {business.email && (
+                  <p>
+                    <a href={`mailto:${business.email}`}>{business.email}</a>
+                  </p>
+                )}
+                <p>Call with questions before your visit.</p>
+              </div>
+            </div>
+            <MapToggle address={address} />
+            {data.unavailable && (
+              <p className="service-note" role="status">
+                Store updates are temporarily unavailable. Please call for the
+                latest information.
+              </p>
+            )}
+          </div>
+        </section>
       </main>
-    </div>
+      <footer className="site-footer wrap">
+        <span>BEAR ARMS ARMORY</span>
+        <p>© {new Date().getFullYear()} Bear Arms Armory</p>
+        <span>Website by Warped Web Studio</span>
+      </footer>
+    </>
   );
 }
