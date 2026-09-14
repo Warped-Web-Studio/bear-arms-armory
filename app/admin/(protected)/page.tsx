@@ -42,7 +42,7 @@ export default async function Dashboard() {
             className="admin-card"
             key={card.href}
           >
-            <h2>{card.title} ↗</h2>
+            <h2>{card.title}</h2>
             <p>{card.description}</p>
           </Link>
         ))}
@@ -51,7 +51,7 @@ export default async function Dashboard() {
         <h2>Location, hours & contact</h2>
         <p>Keep the essentials accurate so visitors can plan ahead.</p>
         <Link className="text-link" href="/admin/business">
-          Edit business information →
+          Edit business information
         </Link>
       </div>
     </>

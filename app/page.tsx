@@ -85,7 +85,7 @@ export default async function Home({
               and the details for your next visit.
             </p>
             <a className="button button-brass" href="#visit">
-              Location & hours <span aria-hidden="true">↗</span>
+              Location & hours
             </a>
           </div>
           <div className="hero-mark">
@@ -206,12 +206,12 @@ export default async function Home({
               <nav className="pagination" aria-label="Highlights gallery pages">
                 {page > 1 && (
                   <a className="button" href={`?gallery=${page - 1}#gallery`}>
-                    ← Newer highlights
+                    Newer highlights
                   </a>
                 )}
                 {data.hasMore && (
                   <a className="button" href={`?gallery=${page + 1}#gallery`}>
-                    Older highlights →
+                    Older highlights
                   </a>
                 )}
               </nav>
@@ -235,7 +235,7 @@ export default async function Home({
               questions, give us a call.
             </p>
             <a className="text-link" href={`tel:${phone}`}>
-              {business.phone} ↗
+              {business.phone}
             </a>
           </div>
         </section>
@@ -269,7 +269,7 @@ export default async function Home({
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Get directions ↗
+                  Get directions
                 </a>
               </div>
               <div>

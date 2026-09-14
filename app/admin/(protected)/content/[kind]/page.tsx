@@ -55,7 +55,7 @@ export default async function ContentList({
               className="text-link"
               href={`/admin/content/${kind}/${record.id}`}
             >
-              Edit<span className="sr-only"> {record.title}</span> →
+              Edit<span className="sr-only"> {record.title}</span>
             </Link>
           </article>
         ))}

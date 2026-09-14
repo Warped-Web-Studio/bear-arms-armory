@@ -17,7 +17,7 @@ export default async function ProtectedLayout({
         <strong>
           Bear Arms Armory <span className="badge">Admin</span>
         </strong>
-        <Link href="/">View website ↗</Link>
+        <Link href="/">View website</Link>
       </header>
       <div className="admin-shell">
         <nav className="admin-nav" aria-label="Administration">

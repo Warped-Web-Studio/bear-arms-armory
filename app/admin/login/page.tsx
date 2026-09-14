@@ -18,7 +18,7 @@ export default function Login() {
           </p>
         )}
         <Link className="text-link" href="/">
-          ← Back to the website
+          Back to the website
         </Link>
       </div>
     </main>
