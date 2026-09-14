@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { Fragment } from "react";
 import { getBusiness, getPublicContent } from "@/lib/data";
 import { defaultBusiness, siteOrigin } from "@/lib/business";
 import { displayDate, displayTime } from "@/lib/content";
@@ -229,7 +230,25 @@ export default async function Home({
           </div>
           <div>
             <span className="about-rule" aria-hidden="true" />
-            <p className="prose large-copy">{business.about}</p>
+            <p className="prose large-copy">
+              {business.about.split("\n").map((line, index) => {
+                const label = line.match(/^([ \t]*)(Purchase Information:)/);
+                return (
+                  <Fragment key={index}>
+                    {index > 0 && "\n"}
+                    {label ? (
+                      <>
+                        {label[1]}
+                        <strong>{label[2]}</strong>
+                        {line.slice(label[0].length)}
+                      </>
+                    ) : (
+                      line
+                    )}
+                  </Fragment>
+                );
+              })}
+            </p>
             <p>
               Find us on East Columbus Avenue. For store hours or general
               questions, give us a call.
