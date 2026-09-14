@@ -4,9 +4,14 @@ export default function NotFound() {
     <main className="wrap section">
       <p className="eyebrow">Page not found</p>
       <h1>Let’s head back.</h1>
-      <Link className="button" href="/">
-        Return to the store website
-      </Link>
+      <div className="form-actions">
+        <Link className="button button-dark" href="/admin">
+          Return to the dashboard
+        </Link>
+        <Link className="button" href="/">
+          Return to the store website
+        </Link>
+      </div>
     </main>
   );
 }
