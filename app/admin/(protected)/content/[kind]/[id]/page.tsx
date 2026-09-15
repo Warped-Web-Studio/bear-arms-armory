@@ -6,6 +6,7 @@ import { content } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin";
 import { contentKinds, kindLabels, type ContentKind } from "@/lib/content";
 import { ContentForm, DeleteForm } from "@/components/admin/content-form";
+import { imageUploadsConfigured } from "@/lib/image-storage";
 export default async function EditContent({
   params,
 }: {
@@ -39,6 +40,7 @@ export default async function EditContent({
         kind={kind}
         record={record}
         imageLibraryConfigured={!!process.env.IMAGE_HOST}
+        uploadsConfigured={imageUploadsConfigured()}
       />
       {record && <DeleteForm id={record.id} kind={kind} />}
     </>

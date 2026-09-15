@@ -31,7 +31,10 @@ Copy `.env.example` to `.env.local` and supply secrets privately. Do not paste c
 | `ADMIN_EMAILS`             | Comma-separated exact email addresses allowed to administer this business.                        |
 | `SITE_URL`                 | Approved canonical production origin; defaults to the confirmed existing website.                 |
 | `SITE_INDEXABLE`           | Set to `true` only on approved production. Keep false on review deployments.                      |
-| `IMAGE_HOST`               | Optional exact HTTPS image-library hostname, without scheme/path. Restart/rebuild after changing. |
+| `IMAGE_HOST`               | Optional additional HTTPS image-library hostname, without scheme/path. Not required for Cloudinary uploads. Restart/rebuild after changing. |
+| `CLOUDINARY_CLOUD_NAME`    | Cloudinary cloud name. Allows images only from this account. Keep it to render existing images after a future provider switch. |
+| `CLOUDINARY_API_KEY`       | Server-only Cloudinary API key used for authenticated uploads. |
+| `CLOUDINARY_API_SECRET`    | Server-only Cloudinary API secret. Never use a `NEXT_PUBLIC_` prefix. |
 | `ADMIN_BOOTSTRAP_EMAIL`    | Temporary existing allowlisted email for local account maintenance.                               |
 | `ADMIN_BOOTSTRAP_PASSWORD` | Temporary 14–128 character password for local account maintenance. Remove after use.              |
 
@@ -41,9 +44,25 @@ The application runs on a Node-compatible Next.js host. No hosting account, data
 
 ## Dynamic images
 
-Database rows store image URLs and alt descriptions, not binary files. Admins may use images from one approved HTTPS host. Local raster image paths under `/client-assets/` and `/derived/` are also supported, including when `IMAGE_HOST` is unset. For example, use `/client-assets/logo/Logo.jpg` (omit the `public` prefix). Supported formats are JPEG, PNG, WebP, and AVIF; PDF files, traversal paths, and local query strings are rejected. Other hosts, credentials in URLs, data URLs, and arbitrary local paths are rejected server-side. Next.js optimizes these images.
+Database rows store image URLs and alt descriptions, not binary files. Admins may use images from the configured Cloudinary account and one additional approved HTTPS host. Local raster image paths under `/client-assets/` and `/derived/` are also supported, including when `IMAGE_HOST` is unset. For example, use `/client-assets/logo/Logo.jpg` (omit the `public` prefix). Supported formats are JPEG, PNG, WebP, and AVIF; PDF files, traversal paths, and local query strings are rejected. Other hosts, credentials in URLs, data URLs, and arbitrary local paths are rejected server-side. Next.js optimizes these images.
 
-Direct file upload is **not implemented**: the storage provider has not been selected. Currently an administrator enters an existing local image path or copies an approved hosted image link into the form. This remains a deployment/configuration decision, not a mock upload button. To add direct upload later, have the selected provider return a URL under `IMAGE_HOST`, then store it in the existing `imageUrl`/`storeImageUrl` fields. Authorize upload operations with `requireAdmin`, validate file size/type server-side, and keep provider credentials server-only. No public content functionality depends on an upload provider.
+### Local photo uploads (Cloudinary Free)
+
+The content and business forms now accept local JPEG, PNG, and WebP files up to 4 MB. Selecting a file uploads it, shows a preview, and fills the existing image-link field. Add the image description and save the form to attach it to the record. Saving is blocked during upload. Failed uploads preserve the previous image; failed content saves retain the new URL so the client can retry without uploading again. Images remain optional. Remove photo clears the field; save to apply the removal.
+
+Setup:
+
+1. Create a [free Cloudinary Image & Video API account](https://cloudinary.com/users/register_free). The free plan supports production use within its [25-credit allowance](https://cloudinary.com/documentation/billing_and_plans), shared across storage, bandwidth, and transformations.
+2. In Cloudinary Console Settings → API Keys, find the cloud name, API key, and API secret.
+3. Set `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` privately in `.env.local` and in the deployment's environment settings. Copy the variable names from `.env.example`. No unsigned upload preset is needed. No `IMAGE_HOST` change is required.
+4. Restart the development server or rebuild/redeploy the hosted site so Next.js permits the account's image URLs.
+5. Sign into the admin dashboard, choose a photo in a content form or Business information, add an image description, and save. Reopen the record and check the public image when published.
+
+Without all three settings, upload controls are disabled with a setup message. Existing paths and approved image links continue to work. Credentials are never returned to the browser. Every upload checks `requireAdmin` server-side before reading the file or calling Cloudinary. The application checks size, MIME type, and raster file signatures; Cloudinary's image endpoint decodes the file and restricts accepted formats. Signed server-to-server requests use unique IDs, do not overwrite previous assets, omit the user's original filename, and time out after 30 seconds. Provider errors are not exposed to the client. The Server Action body limit is 4.2 MB, leaving space for multipart overhead above the 4 MB file limit.
+
+Uploaded photos use public delivery URLs, including photos attached to drafts. Use this feature for photos intended for the website. Removing/replacing a photo or deleting a record does not delete the stored file, which may be referenced elsewhere. Abandoned uploads also remain in Cloudinary. Review unused assets in the Cloudinary console and verify they are unreferenced before deleting them; monitor the free allowance there.
+
+`lib/image-storage.ts` is the provider boundary: `storeImage(file)` returns a URL. A future Vercel Blob integration can replace this function and its configuration without changing the database schema or client workflow. Existing Cloudinary URLs must remain hosted (retain the cloud name and account) or be migrated explicitly; switching upload providers does not move old files automatically.
 
 ## Verified business information and assets
 
@@ -68,7 +87,7 @@ No source-code insertion is required for business content. Use the authenticated
 | Store Highlights Gallery    | `app/page.tsx`, `Home`                                 | Derived automatically from previous published highlights         | 3:2 cover; center the subject. No separate manual archive records.                                                                             |
 | Events                      | `app/page.tsx`, `Home`                                 | Admin → Events                                                   | 3:2 cover, centered; about 1600 × 1067 or larger. Optional.                                                                                    |
 | Announcements               | `app/page.tsx`, `Home`                                 | Admin → Announcements                                            | 3:2 cover, centered. Optional.                                                                                                                 |
-| Store photography           | `app/page.tsx`, `Home`; `components/content-image.tsx` | Admin → Business information → Store photograph link/description | 21:9 desktop, 3:2 mobile, cover. General store photograph around 2000 pixels wide; important subjects near the center. Omitted until provided. |
+| Store photography           | `app/page.tsx`, `Home`; `components/content-image.tsx` | Admin → Business information → Upload photo / description | 21:9 desktop, 3:2 mobile, cover. General store photograph around 2000 pixels wide; important subjects near the center. Omitted until provided. |
 | Hours, email, about/contact | `components/admin/business-form.tsx`, `BusinessForm`   | Admin → Business information                                     | Verified text only. Hours can use one line per day.                                                                                            |
 | Logo                        | `app/page.tsx`, `Home`                                 | Existing `/derived/bear-arms-logo.webp`                          | Preserve ratio; contain. No replacement needed.                                                                                                |
 
@@ -78,7 +97,7 @@ No source-code insertion is required for business content. Use the authenticated
 - Confirm an unauthenticated request cannot read admin content or mutate records. Remove an email from the allowlist and verify its existing session loses access.
 - Create, edit, unpublish, republish, and delete neutral highlights; test overlapping dates, expiration, archive pagination, and entries without images.
 - Verify a same-day event disappears after its end time; test future, draft, and multi-day events.
-- Test allowed-host images, alt descriptions, invalid input, database-unavailable errors, and destructive confirmation.
+- Configure Cloudinary and test a real local upload, replacement, removal, invalid/oversized file, image description, save/reopen persistence, and public image rendering on mobile and desktop. Confirm uploads fail after sign-out. Test allowed-host links, database-unavailable errors, and destructive confirmation.
 - Verify logo, public/admin layout, keyboard focus, mobile menu, form validation, 200% text zoom, and gallery at narrow widths.
 - Confirm map hidden initially, reveal/collapse and `aria-expanded`, and directions/call links on a phone.
 - Obtain verified hours, optional email, and neutral store photography; review all public copy with the client.
@@ -88,8 +107,8 @@ No source-code insertion is required for business content. Use the authenticated
 
 - `npm run lint`: passed, no warnings.
 - `npm run typecheck`: passed.
-- `npm test`: 37 tests passed across seven files. Tests cover publication/history rules, Eastern-time event expiration, validation, optional images, server authorization, protected mutations, safe authentication errors, map/navigation behavior, and form values/record identity across failed saves.
-- `npm run build`: passed. Turbopack required permission to create its local compiler process outside the sandbox.
+- `npm test`: 48 tests passed across eight files. Tests cover publication/history rules, Eastern-time event expiration, validation, optional images, server authorization, protected mutations, safe authentication errors, map/navigation behavior, and form values/record identity across failed saves, signed uploads with mocked Cloudinary, upload authorization and validation, provider failures, account-scoped URLs, and photo replacement/removal.
+- `npm run build -- --webpack`: passed. The default Turbopack build was blocked by the environment when its CSS compiler tried to bind a local port, including on an escalated retry. The standard build script remains unchanged.
 - The local homepage returned HTTP 200. Exhaustive visual/browser QA was deliberately left to the human developer.
 - No live database migration, account creation, live sign-in, storage upload, or deployment was performed. External services are mocked in tests; tests do not contact production APIs.
 - Dependency audit: four moderate advisories in Drizzle Kit's development-only esbuild dependency chain; zero production-dependency advisories. The suggested automatic resolution was a breaking Drizzle Kit downgrade and was not applied.

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { contentKinds } from "./content";
+import { isCloudinaryImage } from "./image-sources";
 
 export function allowedImageUrl(value: string) {
   if (!value) return true;
@@ -16,6 +17,7 @@ export function allowedImageUrl(value: string) {
     return true;
   try {
     const url = new URL(value);
+    if (isCloudinaryImage(url)) return true;
     const host = process.env.IMAGE_HOST;
     return (
       !!host &&

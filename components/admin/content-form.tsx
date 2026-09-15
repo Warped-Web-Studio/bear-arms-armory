@@ -1,6 +1,7 @@
 "use client";
 import { useActionState, useState } from "react";
 import Link from "next/link";
+import { PhotoUpload } from "./photo-upload";
 import {
   saveContent,
   deleteContent,
@@ -16,10 +17,12 @@ export function ContentForm({
   kind,
   record,
   imageLibraryConfigured,
+  uploadsConfigured = false,
 }: {
   kind: ContentKind;
   record?: ContentRecord;
   imageLibraryConfigured: boolean;
+  uploadsConfigured?: boolean;
 }) {
   const [state, action, pending] = useActionState(
     async (previous: SaveState, form: FormData) => {
@@ -34,6 +37,7 @@ export function ContentForm({
     ),
   );
   const [published, setPublished] = useState(record?.published ?? false);
+  const [uploading, setUploading] = useState(false);
   const field = (
     name: keyof ContentRecord,
     label: string,
@@ -67,6 +71,7 @@ export function ContentForm({
           id={name}
           name={name}
           type={type}
+          readOnly={name === "imageUrl" && (uploading || pending)}
           value={values[name] ?? ""}
           onChange={(event) =>
             setValues((previous) => ({
@@ -91,7 +96,13 @@ export function ContentForm({
     </div>
   );
   return (
-    <form action={action} className="admin-card">
+    <form
+      action={action}
+      className="admin-card"
+      onSubmit={(event) => {
+        if (uploading) event.preventDefault();
+      }}
+    >
       <input type="hidden" name="kind" value={kind} />
       <input type="hidden" name="id" value={record?.id || state.id || ""} />
       <div className="form-grid">
@@ -135,6 +146,16 @@ export function ContentForm({
             <input type="hidden" name="location" value="" />
           </>
         )}
+        <PhotoUpload
+          id="content-photo"
+          value={values.imageUrl || ""}
+          configured={uploadsConfigured}
+          disabled={pending}
+          onChange={(imageUrl) =>
+            setValues((previous) => ({ ...previous, imageUrl }))
+          }
+          onBusyChange={setUploading}
+        />
         {field(
           "imageUrl",
           "Image link (optional)",
@@ -185,7 +206,7 @@ export function ContentForm({
         </p>
       )}
       <div className="form-actions">
-        <button className="button button-dark" disabled={pending}>
+        <button className="button button-dark" disabled={pending || uploading}>
           {pending
             ? "Saving…"
             : `Save ${kind === "event" ? "event" : kind === "announcement" ? "announcement" : "highlight"}`}

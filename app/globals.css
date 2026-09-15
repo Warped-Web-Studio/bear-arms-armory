@@ -731,6 +731,8 @@ address {
 }
 .upload-preview img {
   object-fit: contain;
+  width: 100%;
+  height: auto;
 }
 .muted {
   color: var(--muted);
