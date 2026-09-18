@@ -638,6 +638,41 @@ address {
   color: var(--ink);
   min-height: 48px;
 }
+.field input[type="file"] {
+  padding: 0.4rem;
+  cursor: pointer;
+}
+.field input[type="file"]::file-selector-button {
+  min-height: 44px;
+  margin-inline-end: 0.85rem;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+  background: var(--ink);
+  color: white;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.field input[type="file"]:enabled:hover::file-selector-button {
+  background: #354239;
+}
+.field input[type="file"]:enabled:active::file-selector-button {
+  background: #121813;
+  box-shadow: inset 0 2px 4px #0006;
+  transform: translateY(1px);
+}
+.field input[type="file"]:focus-visible::file-selector-button {
+  outline: 2px solid #94712b;
+  outline-offset: 2px;
+}
+.field input[type="file"]:disabled,
+.field input[type="file"]:disabled::file-selector-button {
+  cursor: not-allowed;
+}
+.field input[type="file"]:disabled::file-selector-button {
+  opacity: 0.5;
+}
 .field textarea {
   min-height: 140px;
   resize: vertical;
