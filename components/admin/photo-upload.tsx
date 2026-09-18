@@ -28,7 +28,6 @@ export function PhotoUpload({
   const [failed, setFailed] = useState(false);
   const [checkedConfigured, setCheckedConfigured] = useState<boolean>();
   const [checking, setChecking] = useState(false);
-  const [setupIssues, setSetupIssues] = useState<string[]>([]);
   const ready = checkedConfigured ?? configured;
   const busy = useRef(false);
   return (
@@ -87,16 +86,14 @@ export function PhotoUpload({
             disabled={checking || disabled}
             onClick={async () => {
               setChecking(true);
-              setSetupIssues([]);
               try {
                 const result = await checkImageUploadSetup();
                 setCheckedConfigured(result.configured);
-                setSetupIssues(result.issues);
                 setFailed(!result.configured);
                 setMessage(
                   result.configured
                     ? "Photo uploads are available. Choose a photo above."
-                    : "Photo storage needs attention from your website developer. Share the setup details below.",
+                    : `Photo uploads are unavailable: ${result.issues.filter((issue) => issue.trim()).join(" ") || "The server returned no setup details. Reload the page and run this check again."}`,
                 );
               } catch {
                 setFailed(true);
@@ -110,16 +107,6 @@ export function PhotoUpload({
           >
             {checking ? "Checking…" : "Check photo upload setup"}
           </button>
-          {setupIssues.length > 0 && (
-            <details>
-              <summary>Setup details for your website developer</summary>
-              <ul>
-                {setupIssues.map((issue) => (
-                  <li key={issue}>{issue}</li>
-                ))}
-              </ul>
-            </details>
-          )}
         </div>
       )}
       <p

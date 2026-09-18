@@ -212,7 +212,13 @@ it("shows actionable setup details and keeps upload disabled when setup is missi
   fireEvent.click(
     screen.getByRole("button", { name: "Check photo upload setup" }),
   );
-  await screen.findByText("CLOUDINARY_API_SECRET is missing.");
+  await screen.findByText(
+    "Photo uploads are unavailable: CLOUDINARY_API_SECRET is missing.",
+  );
+  expect(screen.getByRole("alert").textContent).toContain(
+    "CLOUDINARY_API_SECRET is missing.",
+  );
+  expect(document.querySelector("details")).toBeNull();
   expect(
     (screen.getByLabelText("Upload photo (optional)") as HTMLInputElement)
       .disabled,
@@ -233,4 +239,17 @@ it("allows retry after a setup check fails", async () => {
       }) as HTMLButtonElement
     ).disabled,
   ).toBe(false);
+});
+
+it("shows an explicit fallback when a failed setup check returns no useful details", async () => {
+  mock.setup.mockResolvedValueOnce({ configured: false, issues: [" "] });
+  render(<BusinessForm business={defaultBusiness} />);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Check photo upload setup" }),
+  );
+  await screen.findByText(/The server returned no setup details/);
+  expect(
+    (screen.getByLabelText("Upload photo (optional)") as HTMLInputElement)
+      .disabled,
+  ).toBe(true);
 });
