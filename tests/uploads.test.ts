@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
 const mocks = vi.hoisted(() => ({ requireAdmin: vi.fn() }));
 vi.mock("@/lib/admin", () => ({ requireAdmin: mocks.requireAdmin }));
-import { uploadImage } from "@/app/admin/upload";
+import { checkImageUploadSetup, uploadImage } from "@/app/admin/upload";
 import { allowedImageUrl } from "@/lib/validation";
 import { MAX_IMAGE_BYTES } from "@/lib/image-upload";
 
@@ -131,4 +131,44 @@ it("allows only this Cloudinary account and keeps URLs usable without upload cre
   ]) {
     expect(allowedImageUrl(bad)).toBe(false);
   }
+});
+
+it("requires authentication for setup diagnostics", async () => {
+  mocks.requireAdmin.mockRejectedValueOnce(new Error("Unauthorized"));
+  await expect(checkImageUploadSetup()).rejects.toThrow("Unauthorized");
+});
+
+it("identifies invalid and missing settings without returning values", async () => {
+  vi.stubEnv("CLOUDINARY_CLOUD_NAME", "https://private-invalid.example");
+  vi.stubEnv("CLOUDINARY_API_KEY", " ");
+  const result = await checkImageUploadSetup();
+  expect(result.configured).toBe(false);
+  expect(result.issues).toEqual([
+    expect.stringContaining("CLOUDINARY_CLOUD_NAME is invalid"),
+    "CLOUDINARY_API_KEY is missing.",
+  ]);
+  expect(JSON.stringify(result)).not.toMatch(/private-invalid|test-secret/);
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
+it("accepts surrounding whitespace in the cloud name consistently for upload and delivery", async () => {
+  vi.stubEnv("CLOUDINARY_CLOUD_NAME", " store-test\n");
+  expect(await checkImageUploadSetup()).toEqual({
+    configured: true,
+    issues: [],
+  });
+  expect(await uploadImage(form())).toEqual({ ok: true, url });
+  expect(allowedImageUrl(url)).toBe(true);
+});
+
+it("reports missing cloud name and whitespace in credentials", async () => {
+  vi.stubEnv("CLOUDINARY_CLOUD_NAME", "");
+  vi.stubEnv("CLOUDINARY_API_SECRET", " test-secret ");
+  expect(await checkImageUploadSetup()).toEqual({
+    configured: false,
+    issues: [
+      "CLOUDINARY_CLOUD_NAME is missing.",
+      "CLOUDINARY_API_SECRET contains leading or trailing whitespace.",
+    ],
+  });
 });

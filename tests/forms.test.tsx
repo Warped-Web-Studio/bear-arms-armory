@@ -11,8 +11,12 @@ const mock = vi.hoisted(() => ({
   save: vi.fn(),
   business: vi.fn(),
   upload: vi.fn(),
+  setup: vi.fn(),
 }));
-vi.mock("@/app/admin/upload", () => ({ uploadImage: mock.upload }));
+vi.mock("@/app/admin/upload", () => ({
+  uploadImage: mock.upload,
+  checkImageUploadSetup: mock.setup,
+}));
 vi.mock("@/app/admin/actions", () => ({
   saveContent: mock.save,
   saveBusiness: mock.business,
@@ -183,4 +187,50 @@ it("disables uploads without configuration and rejects unsupported client files"
   });
   expect(screen.getByRole("alert").textContent).toContain("JPEG, PNG, or WebP");
   expect(mock.upload).not.toHaveBeenCalled();
+});
+
+it("rechecks disabled uploads and enables file selection when server setup is ready", async () => {
+  mock.setup.mockResolvedValueOnce({ configured: true, issues: [] });
+  render(<BusinessForm business={defaultBusiness} />);
+  const input = screen.getByLabelText(
+    "Upload photo (optional)",
+  ) as HTMLInputElement;
+  expect(input.disabled).toBe(true);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Check photo upload setup" }),
+  );
+  await screen.findByText("Photo uploads are available. Choose a photo above.");
+  expect(input.disabled).toBe(false);
+});
+
+it("shows actionable setup details and keeps upload disabled when setup is missing", async () => {
+  mock.setup.mockResolvedValueOnce({
+    configured: false,
+    issues: ["CLOUDINARY_API_SECRET is missing."],
+  });
+  render(<BusinessForm business={defaultBusiness} />);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Check photo upload setup" }),
+  );
+  await screen.findByText("CLOUDINARY_API_SECRET is missing.");
+  expect(
+    (screen.getByLabelText("Upload photo (optional)") as HTMLInputElement)
+      .disabled,
+  ).toBe(true);
+});
+
+it("allows retry after a setup check fails", async () => {
+  mock.setup.mockRejectedValueOnce(new Error("Network error"));
+  render(<BusinessForm business={defaultBusiness} />);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Check photo upload setup" }),
+  );
+  await screen.findByText(/Couldn’t check photo storage/);
+  expect(
+    (
+      screen.getByRole("button", {
+        name: "Check photo upload setup",
+      }) as HTMLButtonElement
+    ).disabled,
+  ).toBe(false);
 });

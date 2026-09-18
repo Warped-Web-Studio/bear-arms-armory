@@ -1,6 +1,6 @@
 // No credentials are needed to render existing images, including after a provider switch.
 export function cloudinaryName() {
-  const name = process.env.CLOUDINARY_CLOUD_NAME || "";
+  const name = (process.env.CLOUDINARY_CLOUD_NAME || "").trim();
   return /^[a-z0-9_-]+$/.test(name) ? name : "";
 }
 

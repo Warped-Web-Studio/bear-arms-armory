@@ -3,11 +3,26 @@ import { createHash, randomUUID } from "node:crypto";
 import { cloudinaryName, isCloudinaryImage } from "./image-sources";
 
 export function imageUploadsConfigured() {
-  return !!(
-    cloudinaryName() &&
-    process.env.CLOUDINARY_API_KEY &&
-    process.env.CLOUDINARY_API_SECRET
-  );
+  return imageUploadSetupIssues().length === 0;
+}
+
+// Return setting names only, never credential values or provider responses.
+export function imageUploadSetupIssues(): string[] {
+  const issues: string[] = [];
+  if (!process.env.CLOUDINARY_CLOUD_NAME?.trim()) {
+    issues.push("CLOUDINARY_CLOUD_NAME is missing.");
+  } else if (!cloudinaryName()) {
+    issues.push(
+      "CLOUDINARY_CLOUD_NAME is invalid. Use only the cloud name, without a URL or quotation marks.",
+    );
+  }
+  for (const name of ["CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"] as const) {
+    if (!process.env[name]?.trim()) issues.push(`${name} is missing.`);
+    else if (process.env[name] !== process.env[name]?.trim()) {
+      issues.push(`${name} contains leading or trailing whitespace.`);
+    }
+  }
+  return issues;
 }
 
 // The admin action only depends on this URL-returning boundary. A future storage

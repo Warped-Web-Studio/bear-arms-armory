@@ -1,7 +1,17 @@
 "use server";
 import { requireAdmin } from "@/lib/admin";
 import { imageFileError } from "@/lib/image-upload";
-import { imageUploadsConfigured, storeImage } from "@/lib/image-storage";
+import {
+  imageUploadsConfigured,
+  imageUploadSetupIssues,
+  storeImage,
+} from "@/lib/image-storage";
+
+export async function checkImageUploadSetup() {
+  await requireAdmin();
+  const issues = imageUploadSetupIssues();
+  return { configured: issues.length === 0, issues };
+}
 
 export type UploadResult =
   { ok: true; url: string } | { ok: false; message: string };

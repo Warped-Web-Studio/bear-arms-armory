@@ -1,7 +1,7 @@
 "use client";
 import { useRef, useState, useTransition } from "react";
 import Image from "next/image";
-import { uploadImage } from "@/app/admin/upload";
+import { checkImageUploadSetup, uploadImage } from "@/app/admin/upload";
 import {
   imageFileError,
   IMAGE_TYPES,
@@ -26,6 +26,10 @@ export function PhotoUpload({
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState("");
   const [failed, setFailed] = useState(false);
+  const [checkedConfigured, setCheckedConfigured] = useState<boolean>();
+  const [checking, setChecking] = useState(false);
+  const [setupIssues, setSetupIssues] = useState<string[]>([]);
+  const ready = checkedConfigured ?? configured;
   const busy = useRef(false);
   return (
     <div className="field wide" aria-busy={pending}>
@@ -34,7 +38,7 @@ export function PhotoUpload({
         id={id}
         type="file"
         accept={IMAGE_TYPES.join(",")}
-        disabled={!configured || disabled || pending}
+        disabled={!ready || disabled || pending || checking}
         aria-describedby={`${id}-help ${id}-status`}
         onChange={(event) => {
           const file = event.target.files?.[0];
@@ -71,10 +75,53 @@ export function PhotoUpload({
         }}
       />
       <small id={`${id}-help`}>
-        {configured
+        {ready
           ? IMAGE_UPLOAD_HELP
           : "Photo uploads are not set up yet. Contact your website developer."}
       </small>
+      {!ready && (
+        <div>
+          <button
+            type="button"
+            className="text-link"
+            disabled={checking || disabled}
+            onClick={async () => {
+              setChecking(true);
+              setSetupIssues([]);
+              try {
+                const result = await checkImageUploadSetup();
+                setCheckedConfigured(result.configured);
+                setSetupIssues(result.issues);
+                setFailed(!result.configured);
+                setMessage(
+                  result.configured
+                    ? "Photo uploads are available. Choose a photo above."
+                    : "Photo storage needs attention from your website developer. Share the setup details below.",
+                );
+              } catch {
+                setFailed(true);
+                setMessage(
+                  "Couldn’t check photo storage. Reload the page and sign in again, then retry.",
+                );
+              } finally {
+                setChecking(false);
+              }
+            }}
+          >
+            {checking ? "Checking…" : "Check photo upload setup"}
+          </button>
+          {setupIssues.length > 0 && (
+            <details>
+              <summary>Setup details for your website developer</summary>
+              <ul>
+                {setupIssues.map((issue) => (
+                  <li key={issue}>{issue}</li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </div>
+      )}
       <p
         id={`${id}-status`}
         role={failed ? "alert" : "status"}
