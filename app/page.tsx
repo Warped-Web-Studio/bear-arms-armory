@@ -1,11 +1,12 @@
 import Image from "next/image";
 import { Fragment } from "react";
 import { getBusiness, getPublicContent } from "@/lib/data";
-import { defaultBusiness, siteOrigin } from "@/lib/business";
+import { defaultBusiness, getStorePhotos, siteOrigin } from "@/lib/business";
 import { displayDate, displayTime } from "@/lib/content";
 import { Navigation } from "@/components/navigation";
 import { MapToggle } from "@/components/map-toggle";
 import { Highlight } from "@/components/highlight";
+import { StoreCarousel } from "@/components/store-carousel";
 import { ContentImage } from "@/components/content-image";
 export const dynamic = "force-dynamic";
 export default async function Home({
@@ -21,6 +22,7 @@ export default async function Home({
     getBusiness().catch(() => defaultBusiness),
     getPublicContent(page),
   ]);
+  const storePhotos = getStorePhotos(business);
   const address = `${business.address}, ${business.city}, ${business.region} ${business.postalCode}`;
   const phone = business.phone.replace(/[^+\d]/g, "");
   const links = [
@@ -219,53 +221,50 @@ export default async function Home({
             </div>
           </section>
         )}
-        <section id="about" className="about section wrap">
-          <div>
+        <section
+          id="about"
+          className={`about section wrap ${storePhotos.length ? "with-store-photos" : "without-store-photos"}`}
+        >
+          <header className="about-heading">
             <p className="eyebrow">Rooted in Corry</p>
             <h2>
               Our store.
               <br />
               Our community.
             </h2>
-          </div>
-          <div>
-            <span className="about-rule" aria-hidden="true" />
-            <p className="prose large-copy">
-              {business.about.split("\n").map((line, index) => {
-                const label = line.match(/^([ \t]*)(Purchase Information:)/);
-                return (
-                  <Fragment key={index}>
-                    {index > 0 && "\n"}
-                    {label ? (
-                      <>
-                        {label[1]}
-                        <strong>{label[2]}</strong>
-                        {line.slice(label[0].length)}
-                      </>
-                    ) : (
-                      line
-                    )}
-                  </Fragment>
-                );
-              })}
-            </p>
-            <p>
-              Find us on East Columbus Avenue. For store hours or general
-              questions, give us a call.
-            </p>
-            <a className="text-link" href={`tel:${phone}`}>
-              {business.phone}
-            </a>
+          </header>
+          <div className="about-content">
+            {storePhotos.length > 0 && <StoreCarousel photos={storePhotos} />}
+            <div>
+              <p className="prose large-copy">
+                {business.about.split("\n").map((line, index) => {
+                  const label = line.match(/^([ \t]*)(Purchase Information:)/);
+                  return (
+                    <Fragment key={index}>
+                      {index > 0 && "\n"}
+                      {label ? (
+                        <>
+                          {label[1]}
+                          <strong>{label[2]}</strong>
+                          {line.slice(label[0].length)}
+                        </>
+                      ) : (
+                        line
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </p>
+              <p>
+                Find us on East Columbus Avenue. For store hours or general
+                questions, give us a call.
+              </p>
+              <a className="text-link" href={`tel:${phone}`}>
+                {business.phone}
+              </a>
+            </div>
           </div>
         </section>
-        {business.storeImageUrl && (
-          <section className="store-photo wrap" aria-label="Around the store">
-            <ContentImage
-              src={business.storeImageUrl}
-              alt={business.storeImageAlt}
-            />
-          </section>
-        )}
         <section id="visit" className="visit section">
           <div className="wrap">
             <div className="section-heading">

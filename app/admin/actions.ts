@@ -82,8 +82,22 @@ export async function saveBusiness(
   form: FormData,
 ): Promise<SaveState> {
   await requireAdmin();
+  let storePhotos: unknown;
+  if (form.has("storePhotos")) {
+    try {
+      storePhotos = JSON.parse(String(form.get("storePhotos")));
+    } catch {
+      return {
+        ok: false,
+        message:
+          "We couldn’t read the photographs. Reload the page and try again.",
+        errors: { storePhotos: ["The photograph list could not be saved."] },
+      };
+    }
+  }
   const parsed = businessSchema.safeParse({
     ...Object.fromEntries(form),
+    ...(form.has("storePhotos") ? { storePhotos } : {}),
     name: "Bear Arms Armory",
   });
   if (!parsed.success)

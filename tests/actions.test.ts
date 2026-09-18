@@ -87,3 +87,149 @@ it("returns a safe error on database failure", async () => {
   expect(result.ok).toBe(false);
   expect(result.message).not.toContain("secret");
 });
+
+it.each([
+  { storeImageUrl: "", storeImageAlt: "" },
+  { storeImageUrl: "/derived/store.webp", storeImageAlt: "Inside the store" },
+  { storeImageUrl: "", storeImageAlt: "Previous description" },
+])("saves business photograph settings: %j", async (photo) => {
+  const { defaultBusiness } = await import("@/lib/business");
+  const onConflictDoUpdate = vi.fn().mockResolvedValue([]);
+  const values = vi.fn(() => ({ onConflictDoUpdate }));
+  mocks.getDb.mockReturnValue({ insert: () => ({ values }) });
+  const data = new FormData();
+  Object.entries({ ...defaultBusiness, ...photo }).forEach(([key, value]) =>
+    data.set(key, value),
+  );
+  expect((await saveBusiness(initial, data)).ok).toBe(true);
+  expect(values).toHaveBeenCalledWith({
+    id: 1,
+    business: { ...defaultBusiness, ...photo },
+  });
+  expect(onConflictDoUpdate).toHaveBeenCalledWith(
+    expect.objectContaining({
+      set: expect.objectContaining({
+        business: { ...defaultBusiness, ...photo },
+      }),
+    }),
+  );
+  expect(mocks.revalidatePath).toHaveBeenCalledWith("/");
+});
+
+it.each(["", "   "])(
+  "rejects a store photograph without a meaningful description: %j",
+  async (description) => {
+    const { defaultBusiness } = await import("@/lib/business");
+    const data = new FormData();
+    Object.entries({
+      ...defaultBusiness,
+      storeImageUrl: "/derived/store.webp",
+      storeImageAlt: description,
+    }).forEach(([key, value]) => data.set(key, value));
+    const result = await saveBusiness(initial, data);
+    expect(result.ok).toBe(false);
+    expect(result.errors?.storeImageAlt).toContain(
+      "Describe the store photograph.",
+    );
+    expect(mocks.getDb).not.toHaveBeenCalled();
+  },
+);
+
+it.each([
+  { storePhotos: [] },
+  { storePhotos: [{ url: "/derived/portrait.webp", description: "Portrait" }] },
+  {
+    storePhotos: [
+      { url: "/derived/wide.webp", description: "Wide" },
+      { url: "/derived/tall.webp", description: "Tall" },
+    ],
+  },
+])(
+  "persists and reloads an ordered gallery while retaining legacy data: %j",
+  async ({ storePhotos }) => {
+    const { defaultBusiness, getStorePhotos } = await import("@/lib/business");
+    const { getBusiness } = await import("@/lib/data");
+    vi.stubEnv("DATABASE_URL", "test-only");
+    try {
+      const legacy = {
+        ...defaultBusiness,
+        storeImageUrl: "/derived/old.webp",
+        storeImageAlt: "Old photo",
+      };
+      const data = new FormData();
+      Object.entries(legacy).forEach(([key, value]) => data.set(key, value));
+      data.set("storePhotos", JSON.stringify(storePhotos));
+      const onConflictDoUpdate = vi.fn().mockResolvedValue([]);
+      const values = vi.fn<
+        (value: unknown) => { onConflictDoUpdate: typeof onConflictDoUpdate }
+      >(() => ({ onConflictDoUpdate }));
+      mocks.getDb.mockReturnValue({ insert: () => ({ values }) });
+      expect((await saveBusiness(initial, data)).ok).toBe(true);
+      const persisted = values.mock.calls[0][0] as unknown as {
+        business: typeof legacy & { storePhotos: typeof storePhotos };
+      };
+      expect(persisted.business).toEqual({ ...legacy, storePhotos });
+      mocks.getDb.mockReturnValue({
+        select: () => ({
+          from: () => ({ where: () => ({ limit: async () => [persisted] }) }),
+        }),
+      });
+      const reloaded = await getBusiness();
+      expect(getStorePhotos(reloaded)).toEqual(storePhotos);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  },
+);
+
+it.each([
+  "not json",
+  "null",
+  "{}",
+  JSON.stringify([{ url: "/derived/test.webp", description: "   " }]),
+  JSON.stringify([{ url: "javascript:alert(1)", description: "Unsafe" }]),
+  JSON.stringify([{ url: "", description: "Missing image" }]),
+  JSON.stringify(
+    Array.from({ length: 21 }, () => ({
+      url: "/derived/test.webp",
+      description: "Too many",
+    })),
+  ),
+])("rejects invalid gallery data without writing: %s", async (photos) => {
+  const { defaultBusiness } = await import("@/lib/business");
+  const data = new FormData();
+  Object.entries(defaultBusiness).forEach(([key, value]) =>
+    data.set(key, value),
+  );
+  data.set("storePhotos", photos);
+  const result = await saveBusiness(initial, data);
+  expect(result.ok).toBe(false);
+  expect(result.errors?.storePhotos?.length).toBeGreaterThan(0);
+  expect(mocks.getDb).not.toHaveBeenCalled();
+});
+
+it("reads an unmigrated saved photograph as the first gallery photo without writing", async () => {
+  const { defaultBusiness, getStorePhotos } = await import("@/lib/business");
+  const { getBusiness } = await import("@/lib/data");
+  vi.stubEnv("DATABASE_URL", "test-only");
+  try {
+    const business = {
+      ...defaultBusiness,
+      storeImageUrl: "/derived/old.webp",
+      storeImageAlt: "Existing photograph",
+    };
+    const insert = vi.fn();
+    mocks.getDb.mockReturnValue({
+      insert,
+      select: () => ({
+        from: () => ({ where: () => ({ limit: async () => [{ business }] }) }),
+      }),
+    });
+    expect(getStorePhotos(await getBusiness())).toEqual([
+      { url: business.storeImageUrl, description: business.storeImageAlt },
+    ]);
+    expect(insert).not.toHaveBeenCalled();
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});

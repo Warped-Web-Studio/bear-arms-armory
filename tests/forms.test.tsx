@@ -23,6 +23,7 @@ vi.mock("@/app/admin/actions", () => ({
   deleteContent: vi.fn(),
 }));
 import { ContentForm } from "@/components/admin/content-form";
+import { PhotoUpload } from "@/components/admin/photo-upload";
 import { BusinessForm } from "@/components/admin/business-form";
 import { defaultBusiness } from "@/lib/business";
 afterEach(cleanup);
@@ -121,50 +122,6 @@ it("uploads from the content form, blocks saving during upload, and keeps the UR
   ).toBe(url);
 });
 
-it("keeps the existing photo on upload failure and supports replacement and removal in business settings", async () => {
-  mock.upload
-    .mockResolvedValueOnce({ ok: false, message: "Upload failed" })
-    .mockResolvedValueOnce({ ok: true, url: "/derived/replacement.webp" });
-  render(
-    <BusinessForm
-      business={{ ...defaultBusiness, storeImageUrl: "/derived/existing.webp" }}
-      uploadsConfigured
-    />,
-  );
-  const choose = () =>
-    fireEvent.change(screen.getByLabelText("Upload photo (optional)"), {
-      target: {
-        files: [new File(["photo"], "photo.png", { type: "image/png" })],
-      },
-    });
-  choose();
-  await screen.findByText("Upload failed");
-  expect(
-    (
-      screen.getByLabelText(
-        "Store photograph link (optional)",
-      ) as HTMLInputElement
-    ).value,
-  ).toBe("/derived/existing.webp");
-  choose();
-  await screen.findByText(/Photo uploaded/);
-  expect(
-    (
-      screen.getByLabelText(
-        "Store photograph link (optional)",
-      ) as HTMLInputElement
-    ).value,
-  ).toBe("/derived/replacement.webp");
-  fireEvent.click(screen.getByRole("button", { name: "Remove photo" }));
-  expect(
-    (
-      screen.getByLabelText(
-        "Store photograph link (optional)",
-      ) as HTMLInputElement
-    ).value,
-  ).toBe("");
-});
-
 it("disables uploads without configuration and rejects unsupported client files", async () => {
   const view = render(
     <ContentForm kind="event" imageLibraryConfigured={false} />,
@@ -191,7 +148,16 @@ it("disables uploads without configuration and rejects unsupported client files"
 
 it("rechecks disabled uploads and enables file selection when server setup is ready", async () => {
   mock.setup.mockResolvedValueOnce({ configured: true, issues: [] });
-  render(<BusinessForm business={defaultBusiness} />);
+  render(
+    <PhotoUpload
+      id="test-photo"
+      value=""
+      configured={false}
+      disabled={false}
+      onChange={() => {}}
+      onBusyChange={() => {}}
+    />,
+  );
   const input = screen.getByLabelText(
     "Upload photo (optional)",
   ) as HTMLInputElement;
@@ -208,7 +174,16 @@ it("shows actionable setup details and keeps upload disabled when setup is missi
     configured: false,
     issues: ["CLOUDINARY_API_SECRET is missing."],
   });
-  render(<BusinessForm business={defaultBusiness} />);
+  render(
+    <PhotoUpload
+      id="test-photo"
+      value=""
+      configured={false}
+      disabled={false}
+      onChange={() => {}}
+      onBusyChange={() => {}}
+    />,
+  );
   fireEvent.click(
     screen.getByRole("button", { name: "Check photo upload setup" }),
   );
@@ -227,7 +202,16 @@ it("shows actionable setup details and keeps upload disabled when setup is missi
 
 it("allows retry after a setup check fails", async () => {
   mock.setup.mockRejectedValueOnce(new Error("Network error"));
-  render(<BusinessForm business={defaultBusiness} />);
+  render(
+    <PhotoUpload
+      id="test-photo"
+      value=""
+      configured={false}
+      disabled={false}
+      onChange={() => {}}
+      onBusyChange={() => {}}
+    />,
+  );
   fireEvent.click(
     screen.getByRole("button", { name: "Check photo upload setup" }),
   );
@@ -243,7 +227,16 @@ it("allows retry after a setup check fails", async () => {
 
 it("shows an explicit fallback when a failed setup check returns no useful details", async () => {
   mock.setup.mockResolvedValueOnce({ configured: false, issues: [" "] });
-  render(<BusinessForm business={defaultBusiness} />);
+  render(
+    <PhotoUpload
+      id="test-photo"
+      value=""
+      configured={false}
+      disabled={false}
+      onChange={() => {}}
+      onBusyChange={() => {}}
+    />,
+  );
   fireEvent.click(
     screen.getByRole("button", { name: "Check photo upload setup" }),
   );

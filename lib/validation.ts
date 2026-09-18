@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { contentKinds } from "./content";
 import { isCloudinaryImage } from "./image-sources";
+import { MAX_STORE_PHOTOS } from "./business";
 
 export function allowedImageUrl(value: string) {
   if (!value) return true;
@@ -111,8 +112,32 @@ export const businessSchema = z
         "Use a local image under /client-assets/ or /derived/, or an image from the configured image library.",
       ),
     storeImageAlt: z.string().trim().max(250),
+    storePhotos: z
+      .array(
+        z.object({
+          url: z
+            .string()
+            .trim()
+            .min(1, "Upload a photograph.")
+            .max(2000)
+            .refine(allowedImageUrl, "Upload a valid store photograph."),
+          description: z
+            .string()
+            .trim()
+            .min(1, "Describe each store photograph.")
+            .max(250),
+        }),
+      )
+      .max(MAX_STORE_PHOTOS, `Use up to ${MAX_STORE_PHOTOS} store photographs.`)
+      .optional(),
   })
-  .refine((data) => !data.storeImageUrl || !!data.storeImageAlt, {
-    path: ["storeImageAlt"],
-    message: "Describe the store photograph.",
-  });
+  .refine(
+    (data) =>
+      data.storePhotos !== undefined ||
+      !data.storeImageUrl ||
+      !!data.storeImageAlt,
+    {
+      path: ["storeImageAlt"],
+      message: "Describe the store photograph.",
+    },
+  );

@@ -1,8 +1,8 @@
 "use client";
 import { useActionState, useState } from "react";
 import { saveBusiness } from "@/app/admin/actions";
-import type { Business } from "@/lib/business";
-import { PhotoUpload } from "./photo-upload";
+import { getStorePhotos, type Business } from "@/lib/business";
+import { StorePhotosField } from "./store-photos-field";
 export function BusinessForm({
   business,
   uploadsConfigured = false,
@@ -16,7 +16,11 @@ export function BusinessForm({
   });
   const [values, setValues] = useState(business);
   const [uploading, setUploading] = useState(false);
-  const fields: { name: keyof Business; label: string; long?: boolean }[] = [
+  const fields: {
+    name: Exclude<keyof Business, "storePhotos">;
+    label: string;
+    long?: boolean;
+  }[] = [
     { name: "address", label: "Street address" },
     { name: "city", label: "City" },
     { name: "region", label: "State" },
@@ -25,8 +29,6 @@ export function BusinessForm({
     { name: "email", label: "Email (optional)" },
     { name: "hours", label: "Store hours", long: true },
     { name: "about", label: "About the store", long: true },
-    { name: "storeImageUrl", label: "Store photograph link (optional)" },
-    { name: "storeImageAlt", label: "Store photograph description" },
   ];
   return (
     <form
@@ -36,26 +38,19 @@ export function BusinessForm({
         if (uploading) event.preventDefault();
       }}
     >
+      <input type="hidden" name="storeImageUrl" value={values.storeImageUrl} />
+      <input type="hidden" name="storeImageAlt" value={values.storeImageAlt} />
       <div className="form-grid">
-        <PhotoUpload
-          id="store-photo"
-          value={values.storeImageUrl}
+        <StorePhotosField
+          photos={getStorePhotos(business)}
           configured={uploadsConfigured}
-          disabled={pending}
-          onChange={(storeImageUrl) =>
-            setValues((previous) => ({ ...previous, storeImageUrl }))
-          }
+          pending={pending}
           onBusyChange={setUploading}
+          errors={state.errors?.storePhotos}
         />
         {fields.map(({ name, label, long }) => (
           <div className={`field ${long ? "wide" : ""}`} key={name}>
             <label htmlFor={name}>{label}</label>
-            {name === "storeImageUrl" && (
-              <small>
-                Use an existing image under /client-assets/ or /derived/, or a
-                link from your approved image library.
-              </small>
-            )}
             {long ? (
               <textarea
                 name={name}
@@ -75,7 +70,6 @@ export function BusinessForm({
             ) : (
               <input
                 name={name}
-                readOnly={name === "storeImageUrl" && (uploading || pending)}
                 id={name}
                 value={values[name]}
                 onChange={(event) =>
@@ -84,11 +78,9 @@ export function BusinessForm({
                     [name]: event.target.value,
                   }))
                 }
-                required={
-                  !["email", "storeImageUrl", "storeImageAlt"].includes(name)
-                }
+                required={name !== "email"}
                 type={name === "email" ? "email" : "text"}
-                maxLength={name === "storeImageUrl" ? 2000 : 250}
+                maxLength={250}
                 aria-invalid={!!state.errors?.[name]}
                 aria-describedby={`${name}-error`}
               />

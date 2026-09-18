@@ -14,7 +14,19 @@ export const defaultBusiness = {
   storeImageUrl: "",
   storeImageAlt: "",
 };
-export type Business = typeof defaultBusiness;
+export type StorePhoto = { url: string; description: string };
+export type Business = typeof defaultBusiness & { storePhotos?: StorePhoto[] };
+
+// An explicitly empty gallery must not resurrect the previous single photo.
+export function getStorePhotos(business: Business): StorePhoto[] {
+  return (
+    business.storePhotos ??
+    (business.storeImageUrl
+      ? [{ url: business.storeImageUrl, description: business.storeImageAlt }]
+      : [])
+  );
+}
+export const MAX_STORE_PHOTOS = 20;
 export const siteOrigin =
   process.env.SITE_URL || "https://www.beararmsarmorypa.com";
 export const storeTimeZone = "America/New_York";

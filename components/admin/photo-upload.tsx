@@ -15,6 +15,8 @@ export function PhotoUpload({
   disabled,
   onChange,
   onBusyChange,
+  label = "Upload photo (optional)",
+  showSetupCheck = true,
 }: {
   id: string;
   value: string;
@@ -22,6 +24,8 @@ export function PhotoUpload({
   disabled: boolean;
   onChange: (url: string) => void;
   onBusyChange: (busy: boolean) => void;
+  label?: string;
+  showSetupCheck?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState("");
@@ -32,7 +36,7 @@ export function PhotoUpload({
   const busy = useRef(false);
   return (
     <div className="field wide" aria-busy={pending}>
-      <label htmlFor={id}>Upload photo (optional)</label>
+      <label htmlFor={id}>{label}</label>
       <input
         id={id}
         type="file"
@@ -78,7 +82,7 @@ export function PhotoUpload({
           ? IMAGE_UPLOAD_HELP
           : "Photo uploads are not set up yet. Contact your website developer."}
       </small>
-      {!ready && (
+      {!ready && showSetupCheck && (
         <div>
           <button
             type="button"
