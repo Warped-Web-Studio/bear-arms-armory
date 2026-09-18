@@ -30,6 +30,7 @@ export default async function Home({
     ...(data.monthly ? [{ href: "#monthly", label: "This month" }] : []),
     ...(data.events.length ? [{ href: "#events", label: "Events" }] : []),
     { href: "#about", label: "Our store" },
+    { href: "/gallery", label: "Gallery" },
     { href: "#visit", label: "Location & hours" },
   ];
   const structured = {
@@ -181,10 +182,17 @@ export default async function Home({
             <div className="wrap">
               <div className="section-heading">
                 <p className="eyebrow">From around the store</p>
-                <h2>Store Highlights Gallery</h2>
+                <h2>
+                  <a className="text-link" href="/gallery">
+                    Store Highlights Gallery
+                  </a>
+                </h2>
                 <p>
                   A look back at the people, moments, and updates we’ve shared.
                 </p>
+                <a className="button" href="/gallery">
+                  Browse the archive →
+                </a>
               </div>
               <div className="gallery-grid">
                 {data.archive.map((item) => (

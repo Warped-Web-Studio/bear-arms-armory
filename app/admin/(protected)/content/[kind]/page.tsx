@@ -30,6 +30,12 @@ export default async function ContentList({
         Manage published updates, scheduled content, and drafts. All dates and
         times use Eastern time.
       </p>
+      {(kind === "weekly" || kind === "monthly") && (
+        <p className="admin-intro">
+          Use Add highlight for each new feature to keep previous highlights in
+          the archive. Use Edit to correct an existing entry.
+        </p>
+      )}
       <Link className="button button-dark" href={`/admin/content/${kind}/new`}>
         Add{" "}
         {kind === "event"

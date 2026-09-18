@@ -60,6 +60,14 @@ it.each([true, false])(
     const { container } = render(
       await Home({ searchParams: Promise.resolve({}) }),
     );
+    expect(
+      container.querySelector('.nav-links a[href="/gallery"]'),
+    ).not.toBeNull();
+    expect(
+      within(container.querySelector("#gallery") as HTMLElement)
+        .getByRole("link", { name: /Browse the archive/ })
+        .getAttribute("href"),
+    ).toBe("/gallery");
     // Check weekly and monthly independently, plus every other uploaded-photo path.
     for (const selector of [
       "#weekly",

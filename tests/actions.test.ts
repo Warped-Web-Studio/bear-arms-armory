@@ -52,6 +52,7 @@ it("creates an image-free highlight and invalidates public content", async () =>
     expect.objectContaining({ imageUrl: "", published: true, kind: "weekly" }),
   );
   expect(mocks.revalidatePath).toHaveBeenCalledWith("/");
+  expect(mocks.revalidatePath).toHaveBeenCalledWith("/gallery");
 });
 it("updates an existing record without duplicating it", async () => {
   const returning = vi.fn().mockResolvedValue([{ id: "a" }]);
@@ -78,6 +79,7 @@ it("deletes only the validated record after confirmation", async () => {
   f.set("confirm", "on");
   expect((await deleteContent(initial, f)).ok).toBe(true);
   expect(where).toHaveBeenCalledOnce();
+  expect(mocks.revalidatePath).toHaveBeenCalledWith("/gallery");
 });
 it("returns a safe error on database failure", async () => {
   mocks.getDb.mockImplementation(() => {

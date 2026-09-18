@@ -48,6 +48,7 @@ export async function saveContent(
         .insert(content)
         .values({ ...parsed.data, id });
     revalidatePath("/");
+    revalidatePath("/gallery");
     revalidatePath("/admin", "layout");
     return { ok: true, message: "Saved successfully.", id };
   } catch {
@@ -68,6 +69,7 @@ export async function deleteContent(
   try {
     await getDb().delete(content).where(eq(content.id, id.data));
     revalidatePath("/");
+    revalidatePath("/gallery");
     revalidatePath("/admin", "layout");
     return { ok: true, message: "Deleted successfully." };
   } catch {
