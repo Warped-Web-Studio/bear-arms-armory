@@ -1010,6 +1010,9 @@ address {
 .store-photo .content-image {
   aspect-ratio: 21/9;
 }
+.store-photo .content-image img {
+  object-fit: contain;
+}
 @media (max-width: 720px) {
   .store-photo {
     margin-bottom: 3rem;
