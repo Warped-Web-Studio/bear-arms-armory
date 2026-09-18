@@ -319,10 +319,9 @@ address {
   position: relative;
   aspect-ratio: 3/2;
   overflow: hidden;
-  background: #edf0e9;
 }
 .content-image img {
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
 }
 .highlight .content-image {
