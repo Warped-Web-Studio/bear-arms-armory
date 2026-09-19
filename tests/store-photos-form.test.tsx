@@ -6,6 +6,7 @@ import {
   render,
   screen,
   within,
+  waitFor,
 } from "@testing-library/react";
 const mocks = vi.hoisted(() => ({ save: vi.fn(), upload: vi.fn() }));
 vi.mock("@/app/admin/actions", () => ({ saveBusiness: mocks.save }));
@@ -46,7 +47,11 @@ it("allows no photos and shows no description, URL or technical setup controls",
   });
   render(<BusinessForm business={defaultBusiness} />);
   expect(gallery()).toEqual([]);
-  expect(screen.queryByLabelText(/description/i)).toBeNull();
+  expect(
+    within(
+      screen.getByRole("group", { name: "Store photographs (optional)" }),
+    ).queryByLabelText(/description/i),
+  ).toBeNull();
   expect(screen.queryByText(/photograph link/i)).toBeNull();
   expect(screen.queryByRole("button", { name: /setup/i })).toBeNull();
   expect(
@@ -69,7 +74,12 @@ it("uploads first and additional photos, blocks saving during upload, requires d
   );
   upload("Add a store photograph");
   expect(saveButton().disabled).toBe(true);
-  expect(screen.queryByLabelText(/description/i)).toBeNull();
+  expect(
+    within(
+      screen.getByRole("group", { name: "Store photographs (optional)" }),
+    ).queryByLabelText(/description/i),
+  ).toBeNull();
+  await waitFor(() => expect(mocks.upload).toHaveBeenCalled());
   finish({ ok: true, url: "/derived/first.webp" });
   const first = await screen.findByLabelText("Photograph 1 description");
   expect((first as HTMLInputElement).required).toBe(true);
@@ -125,7 +135,11 @@ it("preserves legacy photo and description on failure and replacement, then remo
   ]);
   fireEvent.click(screen.getByRole("button", { name: "Remove photo" }));
   expect(gallery()).toEqual([]);
-  expect(screen.queryByLabelText(/description/i)).toBeNull();
+  expect(
+    within(
+      screen.getByRole("group", { name: "Store photographs (optional)" }),
+    ).queryByLabelText(/description/i),
+  ).toBeNull();
   expect(saveButton().closest("form")!.checkValidity()).toBe(true);
   mocks.save.mockResolvedValueOnce({ ok: true, message: "Removal saved" });
   fireEvent.click(saveButton());
@@ -237,3 +251,8 @@ it("recovers from a rejected upload and still allows reorder, removal, and savin
   fireEvent.click(saveButton());
   await screen.findByText("Saved after failure");
 });
+
+vi.mock("@/lib/optimize-image", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/optimize-image")>()),
+  optimizePhoto: vi.fn((file: File) => file),
+}));

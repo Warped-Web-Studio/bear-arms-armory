@@ -48,6 +48,15 @@ export default async function Dashboard() {
         ))}
       </div>
       <div className="admin-card">
+        <h2>Inventory</h2>
+        <p>
+          List what you have in the store, and choose whether visitors see it.
+        </p>
+        <Link className="text-link" href="/admin/inventory">
+          Manage inventory
+        </Link>
+      </div>
+      <div className="admin-card">
         <h2>Location, hours & contact</h2>
         <p>Keep the essentials accurate so visitors can plan ahead.</p>
         <Link className="text-link" href="/admin/business">

@@ -2,6 +2,7 @@
 import { useActionState, useState } from "react";
 import { saveBusiness } from "@/app/admin/actions";
 import { getStorePhotos, type Business } from "@/lib/business";
+import { PhotoUpload } from "./photo-upload";
 import { StorePhotosField } from "./store-photos-field";
 export function BusinessForm({
   business,
@@ -14,10 +15,13 @@ export function BusinessForm({
     ok: false,
     message: "",
   });
-  const [values, setValues] = useState(business);
+  const [values, setValues] = useState({
+    ...business,
+    email: business.email || "sales@beararmsarmorypa.com",
+  });
   const [uploading, setUploading] = useState(false);
   const fields: {
-    name: Exclude<keyof Business, "storePhotos">;
+    name: Exclude<keyof Business, "storePhotos" | "showInventory">;
     label: string;
     long?: boolean;
   }[] = [
@@ -40,11 +44,18 @@ export function BusinessForm({
     >
       <input type="hidden" name="storeImageUrl" value={values.storeImageUrl} />
       <input type="hidden" name="storeImageAlt" value={values.storeImageAlt} />
+      {/* Carried through so saving this form never changes the inventory
+          visibility the client set on the inventory page. */}
+      <input
+        type="hidden"
+        name="showInventory"
+        value={values.showInventory ? "true" : "false"}
+      />
       <div className="form-grid">
         <StorePhotosField
           photos={getStorePhotos(business)}
           configured={uploadsConfigured}
-          pending={pending}
+          pending={pending || uploading}
           onBusyChange={setUploading}
           errors={state.errors?.storePhotos}
         />
@@ -95,6 +106,57 @@ export function BusinessForm({
           </div>
         ))}
       </div>
+      <fieldset className="accessories-editor">
+        <legend>Knives, Lights and Optics</legend>
+        <p>
+          Add a photo, a description, or both. Save below to show this section
+          on the website.
+        </p>
+        <input
+          type="hidden"
+          name="accessoriesImageUrl"
+          value={values.accessoriesImageUrl || ""}
+        />
+        <PhotoUpload
+          id="accessories-photo"
+          showSetupCheck={false}
+          label={values.accessoriesImageUrl ? "Replace Photo" : "Upload Photo"}
+          value={values.accessoriesImageUrl || ""}
+          configured={uploadsConfigured}
+          disabled={pending || uploading}
+          onBusyChange={setUploading}
+          onChange={(url) =>
+            setValues((previous) => ({ ...previous, accessoriesImageUrl: url }))
+          }
+        />
+        <div className="field wide">
+          <label htmlFor="accessoriesDescription">Description</label>
+          <textarea
+            id="accessoriesDescription"
+            name="accessoriesDescription"
+            maxLength={4000}
+            value={values.accessoriesDescription || ""}
+            onChange={(event) =>
+              setValues((previous) => ({
+                ...previous,
+                accessoriesDescription: event.target.value,
+              }))
+            }
+            aria-invalid={!!state.errors?.accessoriesDescription}
+            aria-describedby="accessories-errors"
+          />
+        </div>
+        <div id="accessories-errors" role="status">
+          {[
+            ...(state.errors?.accessoriesImageUrl || []),
+            ...(state.errors?.accessoriesDescription || []),
+          ].map((error) => (
+            <p className="field-error" key={error}>
+              {error}
+            </p>
+          ))}
+        </div>
+      </fieldset>
       {state.message && (
         <p
           className={`feedback ${state.ok ? "" : "error"}`}

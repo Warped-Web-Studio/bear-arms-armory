@@ -26,6 +26,13 @@ const form = () => {
   }).forEach(([k, v]) => f.set(k, v));
   return f;
 };
+// The browser posts every business field as a string, including the
+// inventory visibility flag the form carries in a hidden input.
+const businessForm = (business: Record<string, unknown>) => {
+  const f = new FormData();
+  Object.entries(business).forEach(([key, value]) => f.set(key, String(value)));
+  return f;
+};
 beforeEach(() => {
   mocks.requireAdmin.mockResolvedValue({ id: "admin" });
 });
@@ -99,10 +106,7 @@ it.each([
   const onConflictDoUpdate = vi.fn().mockResolvedValue([]);
   const values = vi.fn(() => ({ onConflictDoUpdate }));
   mocks.getDb.mockReturnValue({ insert: () => ({ values }) });
-  const data = new FormData();
-  Object.entries({ ...defaultBusiness, ...photo }).forEach(([key, value]) =>
-    data.set(key, value),
-  );
+  const data = businessForm({ ...defaultBusiness, ...photo });
   expect((await saveBusiness(initial, data)).ok).toBe(true);
   expect(values).toHaveBeenCalledWith({
     id: 1,
@@ -122,12 +126,11 @@ it.each(["", "   "])(
   "rejects a store photograph without a meaningful description: %j",
   async (description) => {
     const { defaultBusiness } = await import("@/lib/business");
-    const data = new FormData();
-    Object.entries({
+    const data = businessForm({
       ...defaultBusiness,
       storeImageUrl: "/derived/store.webp",
       storeImageAlt: description,
-    }).forEach(([key, value]) => data.set(key, value));
+    });
     const result = await saveBusiness(initial, data);
     expect(result.ok).toBe(false);
     expect(result.errors?.storeImageAlt).toContain(
@@ -158,8 +161,7 @@ it.each([
         storeImageUrl: "/derived/old.webp",
         storeImageAlt: "Old photo",
       };
-      const data = new FormData();
-      Object.entries(legacy).forEach(([key, value]) => data.set(key, value));
+      const data = businessForm(legacy);
       data.set("storePhotos", JSON.stringify(storePhotos));
       const onConflictDoUpdate = vi.fn().mockResolvedValue([]);
       const values = vi.fn<
@@ -199,10 +201,7 @@ it.each([
   ),
 ])("rejects invalid gallery data without writing: %s", async (photos) => {
   const { defaultBusiness } = await import("@/lib/business");
-  const data = new FormData();
-  Object.entries(defaultBusiness).forEach(([key, value]) =>
-    data.set(key, value),
-  );
+  const data = businessForm(defaultBusiness);
   data.set("storePhotos", photos);
   const result = await saveBusiness(initial, data);
   expect(result.ok).toBe(false);
@@ -235,3 +234,21 @@ it("reads an unmigrated saved photograph as the first gallery photo without writ
     vi.unstubAllEnvs();
   }
 });
+
+it.each(["", "/derived/photo.webp"])(
+  "saves the single managed block including photo removal: %s",
+  async (accessoriesImageUrl) => {
+    const { defaultBusiness } = await import("@/lib/business");
+    const onConflictDoUpdate = vi.fn().mockResolvedValue([]);
+    const values = vi.fn(() => ({ onConflictDoUpdate }));
+    mocks.getDb.mockReturnValue({ insert: () => ({ values }) });
+    const business = {
+      ...defaultBusiness,
+      accessoriesImageUrl,
+      accessoriesDescription: "Client description",
+    };
+    const data = businessForm(business);
+    expect((await saveBusiness(initial, data)).ok).toBe(true);
+    expect(values).toHaveBeenCalledWith({ id: 1, business });
+  },
+);

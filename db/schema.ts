@@ -110,6 +110,40 @@ export const content = pgTable(
     check("content_date_order", sql`${t.endsOn} >= ${t.startsOn}`),
   ],
 );
+export const inventoryStatus = pgEnum("inventory_status", [
+  "available",
+  "on_hold",
+  "sold",
+]);
+export const inventory = pgTable(
+  "inventory",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    manufacturer: text("manufacturer").notNull().default(""),
+    category: text("category").notNull().default(""),
+    caliber: text("caliber").notNull().default(""),
+    // Whole cents avoid floating-point rounding. Null means "price on request".
+    priceCents: integer("price_cents"),
+    status: inventoryStatus("status").notNull().default("available"),
+    // Null rather than "" so the unique index only constrains real stock numbers.
+    sku: text("sku").unique(),
+    description: text("description").notNull().default(""),
+    imageUrl: text("image_url").notNull().default(""),
+    imageAlt: text("image_alt").notNull().default(""),
+    published: boolean("published").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("inventory_public_idx").on(t.published, t.category, t.name),
+    check("inventory_price_nonnegative", sql`${t.priceCents} >= 0`),
+  ],
+);
 export const settings = pgTable(
   "settings",
   {

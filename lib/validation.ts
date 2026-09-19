@@ -2,6 +2,7 @@ import { z } from "zod";
 import { contentKinds } from "./content";
 import { isCloudinaryImage } from "./image-sources";
 import { MAX_STORE_PHOTOS } from "./business";
+import { inventoryStatuses, parsePriceCents } from "./inventory";
 
 export function allowedImageUrl(value: string) {
   if (!value) return true;
@@ -89,6 +90,50 @@ export const contentSchema = z
         });
     }
   });
+// Shared by the admin form and the spreadsheet importer so both accept the
+// same values and produce the same database row.
+export const inventorySchema = z
+  .object({
+    name: z.string().trim().min(1, "Enter an item name.").max(160),
+    manufacturer: z.string().trim().max(120).default(""),
+    category: z.string().trim().max(120).default(""),
+    caliber: z.string().trim().max(120).default(""),
+    priceCents: z
+      .union([z.number().int().min(0).max(99_999_999), z.null()])
+      .default(null),
+    status: z.enum(inventoryStatuses).default("available"),
+    sku: z
+      .union([z.string().trim().min(1).max(80), z.null()])
+      .default(null)
+      .transform((value) => value || null),
+    description: z.string().trim().max(4000).default(""),
+    imageUrl: z
+      .string()
+      .trim()
+      .max(2000)
+      .refine(allowedImageUrl, "Upload a valid photo.")
+      .default(""),
+    imageAlt: z.string().trim().max(250).default(""),
+    published: z.boolean().default(true),
+  })
+  .refine((data) => !data.imageUrl || !!data.imageAlt, {
+    path: ["imageAlt"],
+    message: "Describe the photo for visitors who cannot see it.",
+  });
+export type InventoryInput = z.infer<typeof inventorySchema>;
+
+// The admin form posts a typed price. Convert it before validation so the
+// client can enter "$1,299", "1299" or "1,299.00" and still see one clear error.
+export function inventoryPrice(value: unknown) {
+  const cents = parsePriceCents(String(value ?? ""));
+  return cents === undefined
+    ? {
+        ok: false as const,
+        message: "Enter a price such as 1299 or 1299.99, or leave it blank.",
+      }
+    : { ok: true as const, priceCents: cents };
+}
+
 export const businessSchema = z
   .object({
     name: z.literal("Bear Arms Armory"),
@@ -101,6 +146,17 @@ export const businessSchema = z
       .trim()
       .regex(/^[+\d ()-]{7,30}$/, "Enter a valid phone number."),
     email: z.union([z.literal(""), z.email()]),
+    accessoriesImageUrl: z
+      .string()
+      .trim()
+      .max(2000)
+      .refine(allowedImageUrl, "Upload a valid photo.")
+      .default(""),
+    accessoriesDescription: z.string().trim().max(4000).default(""),
+    showInventory: z
+      .union([z.boolean(), z.literal("true"), z.literal("false")])
+      .default(false)
+      .transform((value) => value === true || value === "true"),
     hours: z.string().trim().min(1).max(1500),
     about: z.string().trim().min(1).max(2500),
     storeImageUrl: z

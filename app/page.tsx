@@ -1,13 +1,19 @@
 import Image from "next/image";
 import { Fragment } from "react";
-import { getBusiness, getPublicContent } from "@/lib/data";
-import { defaultBusiness, getStorePhotos, siteOrigin } from "@/lib/business";
+import { getBusiness, getPublicContent, getPublicInventory } from "@/lib/data";
+import {
+  defaultBusiness,
+  getStorePhotos,
+  siteOrigin,
+  facebookUrl,
+} from "@/lib/business";
 import { displayDate, displayTime } from "@/lib/content";
 import { Navigation } from "@/components/navigation";
 import { MapToggle } from "@/components/map-toggle";
 import { Highlight } from "@/components/highlight";
 import { StoreCarousel } from "@/components/store-carousel";
 import { ContentImage } from "@/components/content-image";
+import { InventorySection } from "@/components/inventory-section";
 export const dynamic = "force-dynamic";
 export default async function Home({
   searchParams,
@@ -22,15 +28,28 @@ export default async function Home({
     getBusiness().catch(() => defaultBusiness),
     getPublicContent(page),
   ]);
+  // Inventory is only read when the client has switched it on, and the
+  // section disappears entirely when there is nothing published.
+  const publicInventory = await getPublicInventory(business.showInventory);
+  const email = business.email || defaultBusiness.email;
+  const showAccessories = !!(
+    business.accessoriesImageUrl || business.accessoriesDescription
+  );
   const storePhotos = getStorePhotos(business);
   const address = `${business.address}, ${business.city}, ${business.region} ${business.postalCode}`;
   const phone = business.phone.replace(/[^+\d]/g, "");
   const links = [
     ...(data.weekly ? [{ href: "#weekly", label: "This week" }] : []),
     ...(data.monthly ? [{ href: "#monthly", label: "This month" }] : []),
+    ...(publicInventory.items.length
+      ? [{ href: "#inventory", label: "Inventory" }]
+      : []),
     ...(data.events.length ? [{ href: "#events", label: "Events" }] : []),
     { href: "#about", label: "Our store" },
     { href: "/gallery", label: "Gallery" },
+    ...(showAccessories
+      ? [{ href: "#knives-lights-optics", label: "Knives & optics" }]
+      : []),
     { href: "#visit", label: "Location & hours" },
   ];
   const structured = {
@@ -47,7 +66,7 @@ export default async function Home({
       postalCode: business.postalCode,
       addressCountry: "US",
     },
-    ...(business.email ? { email: business.email } : {}),
+    email,
   };
   return (
     <>
@@ -131,6 +150,12 @@ export default async function Home({
         )}
         {data.weekly && <Highlight record={data.weekly} />}
         {data.monthly && <Highlight record={data.monthly} />}
+        {publicInventory.items.length > 0 && (
+          <InventorySection
+            items={publicInventory.items}
+            hasMore={publicInventory.hasMore}
+          />
+        )}
         {data.events.length > 0 && (
           <section id="events" className="section events wrap">
             <div className="section-heading">
@@ -229,6 +254,28 @@ export default async function Home({
             </div>
           </section>
         )}
+        {showAccessories && (
+          <section
+            id="knives-lights-optics"
+            className="section wrap accessories-section"
+          >
+            <div className="section-heading">
+              <p className="eyebrow">Also in the store</p>
+              <h2>Knives, Lights and Optics</h2>
+            </div>
+            {business.accessoriesImageUrl && (
+              <ContentImage
+                src={business.accessoriesImageUrl}
+                alt="Knives, lights and optics at Bear Arms Armory"
+              />
+            )}
+            {business.accessoriesDescription && (
+              <p className="prose large-copy">
+                {business.accessoriesDescription}
+              </p>
+            )}
+          </section>
+        )}
         <section
           id="about"
           className={`about section wrap ${storePhotos.length ? "with-store-photos" : "without-store-photos"}`}
@@ -307,11 +354,34 @@ export default async function Home({
                 <a className="contact-phone" href={`tel:${phone}`}>
                   {business.phone}
                 </a>
-                {business.email && (
+                {email && (
                   <p>
-                    <a href={`mailto:${business.email}`}>{business.email}</a>
+                    <a className="text-link" href={`mailto:${email}`}>
+                      Email Us
+                    </a>
                   </p>
                 )}
+                <p>
+                  <a
+                    className="text-link facebook-link"
+                    href={facebookUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="28"
+                      height="28"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047v-2.66c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.971h-1.513c-1.491 0-1.956.931-1.956 1.887v2.264h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" />
+                    </svg>
+                    <span>Follow Us on Facebook</span>
+                  </a>
+                </p>
                 <p>Call with questions before your visit.</p>
               </div>
             </div>

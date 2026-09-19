@@ -2,11 +2,13 @@
 import { useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import { checkImageUploadSetup, uploadImage } from "@/app/admin/upload";
+import { IMAGE_TYPES, IMAGE_UPLOAD_HELP } from "@/lib/image-upload";
+
 import {
-  imageFileError,
-  IMAGE_TYPES,
-  IMAGE_UPLOAD_HELP,
-} from "@/lib/image-upload";
+  optimizePhoto,
+  originalPhotoError,
+  PHOTO_PROCESSING_ERROR,
+} from "@/lib/optimize-image";
 
 export function PhotoUpload({
   id,
@@ -47,16 +49,25 @@ export function PhotoUpload({
           const file = event.target.files?.[0];
           event.target.value = "";
           if (!file || busy.current) return;
-          const error = imageFileError(file);
+          const error = originalPhotoError(file);
           setFailed(!!error);
-          setMessage(error || "Uploading photo…");
+          setMessage(error || "Preparing photo…");
           if (error) return;
           busy.current = true;
           onBusyChange(true);
           startTransition(async () => {
             try {
+              let optimized: File;
+              try {
+                optimized = await optimizePhoto(file);
+              } catch {
+                setFailed(true);
+                setMessage(PHOTO_PROCESSING_ERROR);
+                return;
+              }
+              setMessage("Uploading photo…");
               const form = new FormData();
-              form.set("file", file);
+              form.set("file", optimized);
               const result = await uploadImage(form);
               setFailed(!result.ok);
               if (result.ok) {

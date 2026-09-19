@@ -1,10 +1,15 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from "vitest";
 import { cleanup, render, within } from "@testing-library/react";
-const mocks = vi.hoisted(() => ({ business: vi.fn(), content: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  business: vi.fn(),
+  content: vi.fn(),
+  inventory: vi.fn(async () => ({ items: [], hasMore: false })),
+}));
 vi.mock("@/lib/data", () => ({
   getBusiness: mocks.business,
   getPublicContent: mocks.content,
+  getPublicInventory: mocks.inventory,
 }));
 import Home from "@/app/page";
 import { defaultBusiness } from "@/lib/business";

@@ -50,6 +50,7 @@ export async function uploadImage(form: FormData): Promise<UploadResult> {
       };
     return { ok: true, url: await storeImage(file) };
   } catch {
+    console.error("Photo upload failed during image validation or storage.");
     return {
       ok: false,
       message:

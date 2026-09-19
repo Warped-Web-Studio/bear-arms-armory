@@ -107,6 +107,7 @@ it("uploads from the content form, blocks saving during upload, and keeps the UR
     ).disabled,
   ).toBe(true);
   const url = "https://res.cloudinary.com/demo/image/upload/v1/photo.png";
+  await waitFor(() => expect(mock.upload).toHaveBeenCalled());
   finish({ ok: true, url });
   await screen.findByText(/Photo uploaded/);
   expect(
@@ -245,4 +246,54 @@ it("shows an explicit fallback when a failed setup check returns no useful detai
     (screen.getByLabelText("Upload photo (optional)") as HTMLInputElement)
       .disabled,
   ).toBe(true);
+});
+
+vi.mock("@/lib/optimize-image", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/optimize-image")>()),
+  optimizePhoto: vi.fn((file: File) => file),
+}));
+
+it("uploads, replaces, removes, and saves the managed block while retaining description", async () => {
+  mock.business.mockResolvedValue({ ok: true, message: "Business saved" });
+  mock.upload
+    .mockResolvedValueOnce({ ok: true, url: "/derived/first.webp" })
+    .mockResolvedValueOnce({ ok: true, url: "/derived/second.webp" });
+  render(<BusinessForm business={defaultBusiness} uploadsConfigured />);
+  const choose = (label: string) =>
+    fireEvent.change(screen.getByLabelText(label), {
+      target: {
+        files: [new File(["photo"], "photo.jpg", { type: "image/jpeg" })],
+      },
+    });
+  choose("Upload Photo");
+  await screen.findByLabelText("Replace Photo");
+  fireEvent.change(screen.getByLabelText("Description"), {
+    target: { value: "Client description" },
+  });
+  choose("Replace Photo");
+  await waitFor(() =>
+    expect(
+      (
+        document.querySelector(
+          '[name="accessoriesImageUrl"]',
+        ) as HTMLInputElement
+      ).value,
+    ).toBe("/derived/second.webp"),
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: "Save business information" }),
+  );
+  await screen.findByText("Business saved");
+  expect(mock.business.mock.calls[0][1].get("accessoriesImageUrl")).toBe(
+    "/derived/second.webp",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Remove photo" }));
+  fireEvent.click(
+    screen.getByRole("button", { name: "Save business information" }),
+  );
+  await waitFor(() => expect(mock.business).toHaveBeenCalledTimes(2));
+  expect(mock.business.mock.calls[1][1].get("accessoriesImageUrl")).toBe("");
+  expect(mock.business.mock.calls[1][1].get("accessoriesDescription")).toBe(
+    "Client description",
+  );
 });

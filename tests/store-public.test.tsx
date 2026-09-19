@@ -1,9 +1,13 @@
 // @vitest-environment jsdom
 import { afterEach, it, expect, vi } from "vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
-const mocks = vi.hoisted(() => ({ business: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  business: vi.fn(),
+  inventory: vi.fn(async () => ({ items: [], hasMore: false })),
+}));
 vi.mock("@/lib/data", () => ({
   getBusiness: mocks.business,
+  getPublicInventory: mocks.inventory,
   getPublicContent: async () => ({
     archive: [],
     events: [],
@@ -64,5 +68,52 @@ it.each([0, 1, 3])(
       count > 1 ? 2 : 0,
     );
     expect(document.querySelector(".store-photo")).toBeNull();
+  },
+);
+
+it("provides the confirmed contact links and hides the empty section", async () => {
+  mocks.business.mockResolvedValue({ ...defaultBusiness, email: "" });
+  render(await Home({ searchParams: Promise.resolve({}) }));
+  expect(
+    screen.getByRole("link", { name: "Email Us" }).getAttribute("href"),
+  ).toBe("mailto:sales@beararmsarmorypa.com");
+  expect(
+    screen
+      .getByRole("link", { name: "Follow Us on Facebook" })
+      .getAttribute("href"),
+  ).toBe("https://www.facebook.com/p/Bear-Arms-Armory-61554325822692/");
+  expect(
+    screen.queryByRole("heading", { name: "Knives, Lights and Optics" }),
+  ).toBeNull();
+});
+it.each([
+  ["", "A description"],
+  ["/derived/photo.webp", ""],
+  ["/derived/photo.webp", "A description"],
+])(
+  "renders managed content with photo %s and description %s",
+  async (accessoriesImageUrl, accessoriesDescription) => {
+    mocks.business.mockResolvedValue({
+      ...defaultBusiness,
+      facebookUrl: "https://www.facebook.com/test-fixture",
+      accessoriesImageUrl,
+      accessoriesDescription,
+    });
+    render(await Home({ searchParams: Promise.resolve({}) }));
+    const section = screen
+      .getByRole("heading", { name: "Knives, Lights and Optics" })
+      .closest("section")!;
+    expect(section.querySelectorAll("img").length).toBe(
+      accessoriesImageUrl ? 1 : 0,
+    );
+    if (accessoriesDescription)
+      expect(section.textContent).toContain(accessoriesDescription);
+    const facebook = screen.getByRole("link", {
+      name: "Follow Us on Facebook",
+    });
+    expect(facebook.getAttribute("href")).toBe(
+      "https://www.facebook.com/p/Bear-Arms-Armory-61554325822692/",
+    );
+    expect(facebook.getAttribute("rel")).toBe("noopener noreferrer");
   },
 );

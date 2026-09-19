@@ -1,9 +1,22 @@
 import "server-only";
-import { and, asc, desc, eq, gte, lte, ne, or, gt, inArray } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  lte,
+  ne,
+  or,
+  gt,
+  inArray,
+} from "drizzle-orm";
 import { getDb } from "@/db";
-import { content, settings } from "@/db/schema";
+import { content, inventory, settings } from "@/db/schema";
 import { defaultBusiness } from "./business";
 import { storeClock, type ContentKind, type ContentRecord } from "./content";
+import type { InventoryRecord } from "./inventory";
 import { businessSchema } from "./validation";
 export async function getBusiness() {
   if (!process.env.DATABASE_URL) return defaultBusiness;
@@ -99,6 +112,45 @@ export async function getPublicContent(page = 1) {
     console.error("Public content could not be loaded.");
     return { ...empty, unavailable: true };
   }
+}
+// Inventory is informational. The public list is only read when the client has
+// switched it on; turning it off never touches the records themselves.
+export const PUBLIC_INVENTORY_LIMIT = 300;
+export async function getPublicInventory(visible: boolean) {
+  const empty = { items: [] as InventoryRecord[], hasMore: false };
+  if (!visible || !process.env.DATABASE_URL) return empty;
+  try {
+    // One extra row tells us whether to say the list is partial, so a long
+    // inventory is never silently cut off.
+    const rows = await getDb()
+      .select()
+      .from(inventory)
+      .where(eq(inventory.published, true))
+      .orderBy(asc(inventory.category), asc(inventory.name))
+      .limit(PUBLIC_INVENTORY_LIMIT + 1);
+    return {
+      items: rows.slice(0, PUBLIC_INVENTORY_LIMIT),
+      hasMore: rows.length > PUBLIC_INVENTORY_LIMIT,
+    };
+  } catch {
+    console.error("Inventory could not be loaded.");
+    return empty;
+  }
+}
+export async function listInventory(page = 1) {
+  return getDb()
+    .select()
+    .from(inventory)
+    .orderBy(asc(inventory.category), asc(inventory.name), asc(inventory.id))
+    .limit(51)
+    .offset((page - 1) * 50);
+}
+export async function countInventory() {
+  const rows = await getDb()
+    .select({ total: count() })
+    .from(inventory)
+    .limit(1);
+  return rows[0]?.total ?? 0;
 }
 export async function listContent(kind: ContentKind, page = 1) {
   return getDb()

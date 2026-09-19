@@ -30,6 +30,7 @@ export default async function ProtectedLayout({
           <Link href="/admin/content/monthly">Featured This Month</Link>
           <Link href="/admin/content/event">Events</Link>
           <Link href="/admin/content/announcement">Announcements</Link>
+          <Link href="/admin/inventory">Inventory</Link>
           <Link href="/admin/business">Business information</Link>
           <LogoutButton />
         </nav>
