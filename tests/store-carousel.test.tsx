@@ -234,3 +234,22 @@ it("finishes safely when reduced motion is enabled during a crossfade", async ()
   advance(18000);
   expect(document.querySelectorAll("img")).toHaveLength(1);
 });
+
+it("names a reused slideshow for its own section", () => {
+  render(
+    <StoreCarousel
+      photos={photos}
+      label="Knives, lights and optics photographs"
+      itemName="photograph"
+    />,
+  );
+  expect(
+    screen.getByRole("region", {
+      name: "Knives, lights and optics photographs",
+    }),
+  ).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Next photograph" })).toBeTruthy();
+  expect(
+    screen.getByRole("button", { name: "Previous photograph" }),
+  ).toBeTruthy();
+});

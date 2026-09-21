@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { contentKinds } from "./content";
 import { isCloudinaryImage } from "./image-sources";
-import { MAX_STORE_PHOTOS } from "./business";
+import { MAX_ACCESSORIES_PHOTOS, MAX_STORE_PHOTOS } from "./business";
 import { inventoryStatuses, parsePriceCents } from "./inventory";
 
 export function allowedImageUrl(value: string) {
@@ -134,6 +134,17 @@ export function inventoryPrice(value: unknown) {
     : { ok: true as const, priceCents: cents };
 }
 
+const photoSchema = (name: string) =>
+  z.object({
+    url: z
+      .string()
+      .trim()
+      .min(1, "Upload a photograph.")
+      .max(2000)
+      .refine(allowedImageUrl, `Upload a valid ${name}.`),
+    description: z.string().trim().min(1, `Describe each ${name}.`).max(250),
+  });
+
 export const businessSchema = z
   .object({
     name: z.literal("Bear Arms Armory"),
@@ -169,22 +180,15 @@ export const businessSchema = z
       ),
     storeImageAlt: z.string().trim().max(250),
     storePhotos: z
-      .array(
-        z.object({
-          url: z
-            .string()
-            .trim()
-            .min(1, "Upload a photograph.")
-            .max(2000)
-            .refine(allowedImageUrl, "Upload a valid store photograph."),
-          description: z
-            .string()
-            .trim()
-            .min(1, "Describe each store photograph.")
-            .max(250),
-        }),
-      )
+      .array(photoSchema("store photograph"))
       .max(MAX_STORE_PHOTOS, `Use up to ${MAX_STORE_PHOTOS} store photographs.`)
+      .optional(),
+    accessoriesPhotos: z
+      .array(photoSchema("photograph"))
+      .max(
+        MAX_ACCESSORIES_PHOTOS,
+        `Use up to ${MAX_ACCESSORIES_PHOTOS} knives, lights and optics photographs.`,
+      )
       .optional(),
   })
   .refine(

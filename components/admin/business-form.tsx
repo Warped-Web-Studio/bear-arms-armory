@@ -1,8 +1,12 @@
 "use client";
 import { useActionState, useState } from "react";
 import { saveBusiness } from "@/app/admin/actions";
-import { getStorePhotos, type Business } from "@/lib/business";
-import { PhotoUpload } from "./photo-upload";
+import {
+  getAccessoriesPhotos,
+  getStorePhotos,
+  MAX_ACCESSORIES_PHOTOS,
+  type Business,
+} from "@/lib/business";
 import { StorePhotosField } from "./store-photos-field";
 export function BusinessForm({
   business,
@@ -21,7 +25,10 @@ export function BusinessForm({
   });
   const [uploading, setUploading] = useState(false);
   const fields: {
-    name: Exclude<keyof Business, "storePhotos" | "showInventory">;
+    name: Exclude<
+      keyof Business,
+      "storePhotos" | "accessoriesPhotos" | "showInventory"
+    >;
     label: string;
     long?: boolean;
   }[] = [
@@ -109,25 +116,23 @@ export function BusinessForm({
       <fieldset className="accessories-editor">
         <legend>Knives, Lights and Optics</legend>
         <p>
-          Add a photo, a description, or both. Save below to show this section
-          on the website.
+          Add photos, a description, or both. Photos appear as a slideshow. Save
+          below to show this section on the website.
         </p>
-        <input
-          type="hidden"
-          name="accessoriesImageUrl"
-          value={values.accessoriesImageUrl || ""}
-        />
-        <PhotoUpload
-          id="accessories-photo"
-          showSetupCheck={false}
-          label={values.accessoriesImageUrl ? "Replace Photo" : "Upload Photo"}
-          value={values.accessoriesImageUrl || ""}
+        {/* The photo list below replaces the original single photo. */}
+        <input type="hidden" name="accessoriesImageUrl" value="" />
+        <StorePhotosField
+          photos={getAccessoriesPhotos(business)}
           configured={uploadsConfigured}
-          disabled={pending || uploading}
+          pending={pending || uploading}
           onBusyChange={setUploading}
-          onChange={(url) =>
-            setValues((previous) => ({ ...previous, accessoriesImageUrl: url }))
-          }
+          errors={state.errors?.accessoriesPhotos}
+          name="accessoriesPhotos"
+          idPrefix="accessories"
+          legend="Photos (optional)"
+          emptyText="No photos yet. The description will still appear."
+          addLabel="Add a photo"
+          max={MAX_ACCESSORIES_PHOTOS}
         />
         <div className="field wide">
           <label htmlFor="accessoriesDescription">Description</label>
@@ -147,10 +152,7 @@ export function BusinessForm({
           />
         </div>
         <div id="accessories-errors" role="status">
-          {[
-            ...(state.errors?.accessoriesImageUrl || []),
-            ...(state.errors?.accessoriesDescription || []),
-          ].map((error) => (
+          {(state.errors?.accessoriesDescription || []).map((error) => (
             <p className="field-error" key={error}>
               {error}
             </p>

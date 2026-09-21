@@ -1152,10 +1152,11 @@ address {
   }
 }
 
-.accessories-section .content-image {
-  margin-block: 2rem;
+.accessories-section.one-column .about-content {
+  grid-template-columns: minmax(0, 1fr);
+}
+.accessories-section.one-column .store-carousel {
   max-width: 720px;
-  max-height: 460px;
 }
 .accessories-section .prose {
   overflow-wrap: anywhere;

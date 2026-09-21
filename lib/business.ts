@@ -19,7 +19,10 @@ export const defaultBusiness = {
   storeImageAlt: "",
 };
 export type StorePhoto = { url: string; description: string };
-export type Business = typeof defaultBusiness & { storePhotos?: StorePhoto[] };
+export type Business = typeof defaultBusiness & {
+  storePhotos?: StorePhoto[];
+  accessoriesPhotos?: StorePhoto[];
+};
 
 // An explicitly empty gallery must not resurrect the previous single photo.
 export function getStorePhotos(business: Business): StorePhoto[] {
@@ -31,6 +34,23 @@ export function getStorePhotos(business: Business): StorePhoto[] {
   );
 }
 export const MAX_STORE_PHOTOS = 20;
+
+// Knives, lights and optics started with one photo. Keep showing it until the
+// client saves the new photo list; an explicitly empty list stays empty.
+export function getAccessoriesPhotos(business: Business): StorePhoto[] {
+  return (
+    business.accessoriesPhotos ??
+    (business.accessoriesImageUrl
+      ? [
+          {
+            url: business.accessoriesImageUrl,
+            description: "Knives, lights and optics at Bear Arms Armory",
+          },
+        ]
+      : [])
+  );
+}
+export const MAX_ACCESSORIES_PHOTOS = 20;
 export const siteOrigin =
   process.env.SITE_URL || "https://www.beararmsarmorypa.com";
 export const storeTimeZone = "America/New_York";

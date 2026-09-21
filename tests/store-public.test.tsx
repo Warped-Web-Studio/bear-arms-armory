@@ -86,25 +86,47 @@ it("provides the confirmed contact links and hides the empty section", async () 
     screen.queryByRole("heading", { name: "Knives, Lights and Optics" }),
   ).toBeNull();
 });
+const accessoryPhotos = (count: number) =>
+  Array.from({ length: count }, (_, index) => ({
+    url: `/derived/accessory-${index}.webp`,
+    description: `Accessory ${index + 1}`,
+  }));
 it.each([
-  ["", "A description"],
-  ["/derived/photo.webp", ""],
-  ["/derived/photo.webp", "A description"],
+  [0, "A description"],
+  [1, ""],
+  [1, "A description"],
+  [3, "A description"],
 ])(
-  "renders managed content with photo %s and description %s",
-  async (accessoriesImageUrl, accessoriesDescription) => {
+  "renders knives, lights and optics with %s photos and description %j",
+  async (count, accessoriesDescription) => {
+    vi.stubGlobal("matchMedia", () => ({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
     mocks.business.mockResolvedValue({
       ...defaultBusiness,
       facebookUrl: "https://www.facebook.com/test-fixture",
-      accessoriesImageUrl,
+      accessoriesPhotos: accessoryPhotos(count),
       accessoriesDescription,
     });
     render(await Home({ searchParams: Promise.resolve({}) }));
     const section = screen
       .getByRole("heading", { name: "Knives, Lights and Optics" })
       .closest("section")!;
-    expect(section.querySelectorAll("img").length).toBe(
-      accessoriesImageUrl ? 1 : 0,
+    const slideshow = within(section).queryByRole("region", {
+      name: "Knives, lights and optics photographs",
+    });
+    expect(!!slideshow).toBe(count > 0);
+    if (slideshow) {
+      expect(within(slideshow).getByAltText("Accessory 1")).toBeTruthy();
+      expect(
+        !!within(slideshow).queryByRole("button", { name: "Next photograph" }),
+      ).toBe(count > 1);
+      if (count > 1) expect(slideshow.textContent).toContain(`1 / ${count}`);
+    }
+    expect(section.className).toContain(
+      count && accessoriesDescription ? "two-column" : "one-column",
     );
     if (accessoriesDescription)
       expect(section.textContent).toContain(accessoriesDescription);
@@ -117,3 +139,29 @@ it.each([
     expect(facebook.getAttribute("rel")).toBe("noopener noreferrer");
   },
 );
+it("keeps showing the original single knives, lights and optics photo", async () => {
+  vi.stubGlobal("matchMedia", () => ({
+    matches: true,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }));
+  mocks.business.mockResolvedValue({
+    ...defaultBusiness,
+    accessoriesImageUrl: "/derived/photo.webp",
+  });
+  render(await Home({ searchParams: Promise.resolve({}) }));
+  expect(
+    screen.getByAltText("Knives, lights and optics at Bear Arms Armory"),
+  ).toBeTruthy();
+});
+it("does not bring back the original photo after all photos are removed", async () => {
+  mocks.business.mockResolvedValue({
+    ...defaultBusiness,
+    accessoriesImageUrl: "/derived/photo.webp",
+    accessoriesPhotos: [],
+  });
+  render(await Home({ searchParams: Promise.resolve({}) }));
+  expect(
+    screen.queryByRole("heading", { name: "Knives, Lights and Optics" }),
+  ).toBeNull();
+});

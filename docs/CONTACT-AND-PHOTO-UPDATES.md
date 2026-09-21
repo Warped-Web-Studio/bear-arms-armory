@@ -1,6 +1,6 @@
 # Contact, managed section, and photo uploads
 
-Business information (`/admin/business`) now includes a single “Knives, Lights and Optics” photo/description block. Upload, replace, or remove the photo and save business information. Either photo or description can stand alone; the public section is hidden when both are empty. Images use the existing responsive contain presentation without stretching or cropping.
+Business information (`/admin/business`) includes a “Knives, Lights and Optics” block with up to 20 photos and a description. Add, replace, reorder, or remove photos (each needs a short description for visitors who can’t see it), then save business information. Photos appear on the homepage in the same slideshow as “Our store. Our community.” Photos or description can stand alone; the public section is hidden when both are empty. A photo saved under the earlier single-photo version still shows on the site, and it appears as the first photo in the admin list; saving the form moves it into the new list.
 
 “Email Us” appears under Get in touch, with the client-provided `sales@beararmsarmorypa.com` as the default and fallback for previously empty settings. The client-provided Facebook page is hard-coded in `lib/business.ts` and displayed with a Facebook logo under Get in touch. It is not editable in the admin dashboard.
 

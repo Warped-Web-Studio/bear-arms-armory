@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import { getBusiness, getPublicContent, getPublicInventory } from "@/lib/data";
 import {
   defaultBusiness,
+  getAccessoriesPhotos,
   getStorePhotos,
   siteOrigin,
   facebookUrl,
@@ -32,8 +33,9 @@ export default async function Home({
   // section disappears entirely when there is nothing published.
   const publicInventory = await getPublicInventory(business.showInventory);
   const email = business.email || defaultBusiness.email;
+  const accessoriesPhotos = getAccessoriesPhotos(business);
   const showAccessories = !!(
-    business.accessoriesImageUrl || business.accessoriesDescription
+    accessoriesPhotos.length || business.accessoriesDescription
   );
   const storePhotos = getStorePhotos(business);
   const address = `${business.address}, ${business.city}, ${business.region} ${business.postalCode}`;
@@ -257,23 +259,28 @@ export default async function Home({
         {showAccessories && (
           <section
             id="knives-lights-optics"
-            className="section wrap accessories-section"
+            className={`section wrap accessories-section ${accessoriesPhotos.length && business.accessoriesDescription ? "two-column" : "one-column"}`}
           >
             <div className="section-heading">
               <p className="eyebrow">Also in the store</p>
               <h2>Knives, Lights and Optics</h2>
             </div>
-            {business.accessoriesImageUrl && (
-              <ContentImage
-                src={business.accessoriesImageUrl}
-                alt="Knives, lights and optics at Bear Arms Armory"
-              />
-            )}
-            {business.accessoriesDescription && (
-              <p className="prose large-copy">
-                {business.accessoriesDescription}
-              </p>
-            )}
+            <div className="about-content">
+              {accessoriesPhotos.length > 0 && (
+                <StoreCarousel
+                  photos={accessoriesPhotos}
+                  label="Knives, lights and optics photographs"
+                  itemName="photograph"
+                />
+              )}
+              {business.accessoriesDescription && (
+                <div>
+                  <p className="prose large-copy">
+                    {business.accessoriesDescription}
+                  </p>
+                </div>
+              )}
+            </div>
           </section>
         )}
         <section

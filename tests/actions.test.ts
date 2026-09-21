@@ -235,20 +235,85 @@ it("reads an unmigrated saved photograph as the first gallery photo without writ
   }
 });
 
-it.each(["", "/derived/photo.webp"])(
-  "saves the single managed block including photo removal: %s",
-  async (accessoriesImageUrl) => {
-    const { defaultBusiness } = await import("@/lib/business");
+it.each([
+  { accessoriesPhotos: [] },
+  {
+    accessoriesPhotos: [
+      { url: "/derived/knives.webp", description: "Knife case" },
+    ],
+  },
+  {
+    accessoriesPhotos: [
+      { url: "/derived/lights.webp", description: "Flashlights" },
+      { url: "/derived/optics.webp", description: "Scopes" },
+    ],
+  },
+])(
+  "saves ordered knives, lights and optics photos and clears the old single photo: %j",
+  async ({ accessoriesPhotos }) => {
+    const { defaultBusiness, getAccessoriesPhotos } =
+      await import("@/lib/business");
     const onConflictDoUpdate = vi.fn().mockResolvedValue([]);
     const values = vi.fn(() => ({ onConflictDoUpdate }));
     mocks.getDb.mockReturnValue({ insert: () => ({ values }) });
     const business = {
       ...defaultBusiness,
-      accessoriesImageUrl,
+      accessoriesImageUrl: "",
       accessoriesDescription: "Client description",
     };
     const data = businessForm(business);
+    data.set("accessoriesPhotos", JSON.stringify(accessoriesPhotos));
     expect((await saveBusiness(initial, data)).ok).toBe(true);
-    expect(values).toHaveBeenCalledWith({ id: 1, business });
+    expect(values).toHaveBeenCalledWith({
+      id: 1,
+      business: { ...business, accessoriesPhotos },
+    });
+    expect(
+      getAccessoriesPhotos({
+        ...business,
+        accessoriesImageUrl: "/derived/old.webp",
+        accessoriesPhotos,
+      }),
+    ).toEqual(accessoriesPhotos);
   },
 );
+
+it.each([
+  "not json",
+  "{}",
+  JSON.stringify([{ url: "/derived/test.webp", description: "   " }]),
+  JSON.stringify([{ url: "javascript:alert(1)", description: "Unsafe" }]),
+  JSON.stringify(
+    Array.from({ length: 21 }, () => ({
+      url: "/derived/test.webp",
+      description: "Too many",
+    })),
+  ),
+])(
+  "rejects invalid knives, lights and optics photos without writing: %s",
+  async (photos) => {
+    const { defaultBusiness } = await import("@/lib/business");
+    const data = businessForm(defaultBusiness);
+    data.set("accessoriesPhotos", photos);
+    const result = await saveBusiness(initial, data);
+    expect(result.ok).toBe(false);
+    expect(result.errors?.accessoriesPhotos?.length).toBeGreaterThan(0);
+    expect(mocks.getDb).not.toHaveBeenCalled();
+  },
+);
+
+it("shows an unmigrated knives, lights and optics photo until the list is saved", async () => {
+  const { defaultBusiness, getAccessoriesPhotos } =
+    await import("@/lib/business");
+  expect(
+    getAccessoriesPhotos({
+      ...defaultBusiness,
+      accessoriesImageUrl: "/derived/old.webp",
+    }),
+  ).toEqual([
+    {
+      url: "/derived/old.webp",
+      description: "Knives, lights and optics at Bear Arms Armory",
+    },
+  ]);
+});

@@ -27,7 +27,15 @@ function subscribeVisibility(callback: () => void) {
 const isHidden = () => document.hidden;
 const initiallyPaused = () => true;
 
-export function StoreCarousel({ photos }: { photos: StorePhoto[] }) {
+export function StoreCarousel({
+  photos,
+  label = "Store photographs",
+  itemName = "store photograph",
+}: {
+  photos: StorePhoto[];
+  label?: string;
+  itemName?: string;
+}) {
   const [index, setIndex] = useState(0);
   const [incoming, setIncoming] = useState<number | null>(null);
   const [ready, setReady] = useState(false);
@@ -101,7 +109,7 @@ export function StoreCarousel({ photos }: { photos: StorePhoto[] }) {
     <div
       className="store-carousel"
       role="region"
-      aria-label="Store photographs"
+      aria-label={label}
       aria-roledescription={multiple ? "carousel" : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -158,7 +166,7 @@ export function StoreCarousel({ photos }: { photos: StorePhoto[] }) {
             <button
               type="button"
               className="store-carousel-arrow previous"
-              aria-label="Previous store photograph"
+              aria-label={`Previous ${itemName}`}
               aria-controls={slideId}
               aria-disabled={incoming !== null}
               onClick={() => move(-1)}
@@ -168,7 +176,7 @@ export function StoreCarousel({ photos }: { photos: StorePhoto[] }) {
             <button
               type="button"
               className="store-carousel-arrow next"
-              aria-label="Next store photograph"
+              aria-label={`Next ${itemName}`}
               aria-controls={slideId}
               aria-disabled={incoming !== null}
               onClick={() => move(1)}

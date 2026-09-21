@@ -253,7 +253,7 @@ vi.mock("@/lib/optimize-image", async (importOriginal) => ({
   optimizePhoto: vi.fn((file: File) => file),
 }));
 
-it("uploads, replaces, removes, and saves the managed block while retaining description", async () => {
+it("adds several knives, lights and optics photos, removes one, and keeps the description", async () => {
   mock.business.mockResolvedValue({ ok: true, message: "Business saved" });
   mock.upload
     .mockResolvedValueOnce({ ok: true, url: "/derived/first.webp" })
@@ -265,35 +265,37 @@ it("uploads, replaces, removes, and saves the managed block while retaining desc
         files: [new File(["photo"], "photo.jpg", { type: "image/jpeg" })],
       },
     });
-  choose("Upload Photo");
-  await screen.findByLabelText("Replace Photo");
+  choose("Add a photo");
+  await screen.findByLabelText("Photograph 1 description");
+  choose("Add a photo");
+  await screen.findByLabelText("Photograph 2 description");
+  fireEvent.change(screen.getByLabelText("Photograph 1 description"), {
+    target: { value: "Knife case" },
+  });
+  fireEvent.change(screen.getByLabelText("Photograph 2 description"), {
+    target: { value: "Scopes" },
+  });
   fireEvent.change(screen.getByLabelText("Description"), {
     target: { value: "Client description" },
   });
-  choose("Replace Photo");
-  await waitFor(() =>
-    expect(
-      (
-        document.querySelector(
-          '[name="accessoriesImageUrl"]',
-        ) as HTMLInputElement
-      ).value,
-    ).toBe("/derived/second.webp"),
-  );
   fireEvent.click(
     screen.getByRole("button", { name: "Save business information" }),
   );
   await screen.findByText("Business saved");
-  expect(mock.business.mock.calls[0][1].get("accessoriesImageUrl")).toBe(
-    "/derived/second.webp",
-  );
-  fireEvent.click(screen.getByRole("button", { name: "Remove photo" }));
+  const first = mock.business.mock.calls[0][1];
+  expect(JSON.parse(first.get("accessoriesPhotos"))).toEqual([
+    { url: "/derived/first.webp", description: "Knife case" },
+    { url: "/derived/second.webp", description: "Scopes" },
+  ]);
+  expect(first.get("accessoriesImageUrl")).toBe("");
+  fireEvent.click(screen.getAllByRole("button", { name: "Remove photo" })[0]);
   fireEvent.click(
     screen.getByRole("button", { name: "Save business information" }),
   );
   await waitFor(() => expect(mock.business).toHaveBeenCalledTimes(2));
-  expect(mock.business.mock.calls[1][1].get("accessoriesImageUrl")).toBe("");
-  expect(mock.business.mock.calls[1][1].get("accessoriesDescription")).toBe(
-    "Client description",
-  );
+  const second = mock.business.mock.calls[1][1];
+  expect(JSON.parse(second.get("accessoriesPhotos"))).toEqual([
+    { url: "/derived/second.webp", description: "Scopes" },
+  ]);
+  expect(second.get("accessoriesDescription")).toBe("Client description");
 });

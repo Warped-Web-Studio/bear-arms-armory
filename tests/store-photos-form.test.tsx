@@ -108,6 +108,7 @@ it("uploads first and additional photos, blocks saving during upload, requires d
     ...Object.fromEntries(submitted),
     name: defaultBusiness.name,
     storePhotos: JSON.parse(String(submitted.get("storePhotos"))),
+    accessoriesPhotos: JSON.parse(String(submitted.get("accessoriesPhotos"))),
   });
   view.unmount();
   render(<BusinessForm business={saved as Business} uploadsConfigured />);

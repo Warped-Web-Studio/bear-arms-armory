@@ -9,12 +9,25 @@ export function StorePhotosField({
   pending,
   onBusyChange,
   errors,
+  name = "storePhotos",
+  idPrefix = "store",
+  legend = "Store photographs (optional)",
+  emptyText = "No store photographs yet. Your store information will still appear.",
+  addLabel = "Add a store photograph",
+  max = MAX_STORE_PHOTOS,
 }: {
   photos: StorePhoto[];
   configured: boolean;
   pending: boolean;
   onBusyChange: (busy: boolean) => void;
   errors?: string[];
+  // The same editor also manages the knives, lights and optics photos.
+  name?: string;
+  idPrefix?: string;
+  legend?: string;
+  emptyText?: string;
+  addLabel?: string;
+  max?: number;
 }) {
   const [rows, setRows] = useState(() =>
     photos.map((photo, key) => ({ ...photo, key })),
@@ -47,30 +60,26 @@ export function StorePhotosField({
   return (
     <fieldset
       className="store-photos-editor field wide"
-      aria-describedby="store-photos-help store-photos-errors"
+      aria-describedby={`${idPrefix}-photos-help ${idPrefix}-photos-errors`}
     >
-      <legend>Store photographs (optional)</legend>
-      <p id="store-photos-help">
-        Add up to {MAX_STORE_PHOTOS} photographs. Describe each one, then save
-        your changes. The website fits each photo automatically.
+      <legend>{legend}</legend>
+      <p id={`${idPrefix}-photos-help`}>
+        Add up to {max} photographs. Describe each one, then save your changes.
+        The website fits each photo automatically.
       </p>
       <input
         type="hidden"
-        name="storePhotos"
+        name={name}
         value={JSON.stringify(
           rows.map(({ url, description }) => ({ url, description })),
         )}
       />
-      {!rows.length && (
-        <p>
-          No store photographs yet. Your store information will still appear.
-        </p>
-      )}
+      {!rows.length && <p>{emptyText}</p>}
       {rows.map((photo, index) => (
         <fieldset className="store-photo-editor" key={photo.key}>
           <legend>Photograph {index + 1}</legend>
           <PhotoUpload
-            id={`store-photo-${photo.key}`}
+            id={`${idPrefix}-photo-${photo.key}`}
             value={photo.url}
             configured={configured}
             disabled={disabled}
@@ -92,16 +101,16 @@ export function StorePhotosField({
             }}
           />
           <div className="field">
-            <label htmlFor={`store-description-${photo.key}`}>
+            <label htmlFor={`${idPrefix}-description-${photo.key}`}>
               Photograph {index + 1} description
             </label>
             <input
-              id={`store-description-${photo.key}`}
+              id={`${idPrefix}-description-${photo.key}`}
               required
               maxLength={250}
               value={photo.description}
               readOnly={pending}
-              aria-describedby="store-photos-errors"
+              aria-describedby={`${idPrefix}-photos-errors`}
               onChange={(event) =>
                 setRows((previous) =>
                   previous.map((item) =>
@@ -141,14 +150,14 @@ export function StorePhotosField({
           )}
         </fieldset>
       ))}
-      {rows.length < MAX_STORE_PHOTOS && (
+      {rows.length < max && (
         <PhotoUpload
-          id="add-store-photo"
+          id={`add-${idPrefix}-photo`}
           value=""
           configured={configured}
           disabled={disabled}
           showSetupCheck={false}
-          label="Add a store photograph"
+          label={addLabel}
           onBusyChange={setUploading}
           onChange={(url) => {
             if (!url) return;
@@ -158,7 +167,7 @@ export function StorePhotosField({
         />
       )}
       <p role="status">{notice}</p>
-      <div id="store-photos-errors">
+      <div id={`${idPrefix}-photos-errors`}>
         {errors?.map((error) => (
           <p className="field-error" key={error}>
             {error}
